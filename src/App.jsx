@@ -3,7 +3,8 @@ import {
   onAuthStateChanged, signInWithPopup, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendPasswordResetEmail, signOut as firebaseSignOut
 } from 'firebase/auth';
-import { auth, googleProvider } from './firebase';
+import { auth, googleProvider, db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { 
   BarChart2, PlusCircle, History, ShieldCheck, Printer, Save, CheckCircle, 
   TrendingUp, TrendingDown, AlertCircle, Calendar, Target, Users, AlertTriangle,
@@ -44,7 +45,7 @@ const LANGUAGE_LOCALES = { es: 'es-ES', pt: 'pt-BR', en: 'en-US' };
 
 const UI_TRANSLATIONS = {
   es: {
-    appSubtitle: 'Inteligencia de Rentabilidad Empresarial', accessCode: 'Código de acceso...', enterSystem: 'Ingresar al Sistema', authWelcome: 'Bienvenido a anareQ', authDesc: 'Convierte métricas de Meta Ads en decisiones rentables y reportes profesionales.', continueGoogle: 'Continuar con Google', orEmail: 'o continúa con tu correo', email: 'Correo electrónico', password: 'Contraseña', signIn: 'Iniciar sesión', createAccount: 'Crear cuenta', noAccount: '¿Aún no tienes cuenta?', alreadyAccount: '¿Ya tienes una cuenta?', forgotPassword: 'Olvidé mi contraseña', resetSent: 'Te enviamos un correo para restablecer tu contraseña.', authRequired: 'Completa tu correo y contraseña.', authInvalidEmail: 'Ingresa un correo válido.', authWrongPassword: 'El correo o la contraseña no son correctos.', authEmailInUse: 'Ese correo ya tiene una cuenta.', authWeakPassword: 'Usa una contraseña de al menos 6 caracteres.', authPopupClosed: 'El inicio con Google fue cancelado.', authGeneric: 'No pudimos iniciar sesión. Intenta nuevamente.', authLoading: 'Preparando tu espacio...',
+    appSubtitle: 'Inteligencia de Rentabilidad Empresarial', accessCode: 'Código de acceso...', enterSystem: 'Ingresar al Sistema', authWelcome: 'Bienvenido a anareQ', authDesc: 'Convierte métricas de Meta Ads en decisiones rentables y reportes profesionales.', continueGoogle: 'Continuar con Google', orEmail: 'o continúa con Google', email: 'Correo electrónico', password: 'Contraseña', signIn: 'Iniciar sesión', createAccount: 'Crear cuenta', noAccount: '¿Aún no tienes cuenta?', alreadyAccount: '¿Ya tienes una cuenta?', forgotPassword: 'Olvidé mi contraseña', resetSent: 'Te enviamos un correo para restablecer tu contraseña.', authRequired: 'Completa tu correo y contraseña.', authInvalidEmail: 'Ingresa un correo válido.', authWrongPassword: 'El correo o la contraseña no son correctos.', authEmailInUse: 'Ese correo ya tiene una cuenta.', authWeakPassword: 'Usa una contraseña de al menos 6 caracteres.', authPopupClosed: 'El inicio con Google fue cancelado.', authGeneric: 'No pudimos iniciar sesión. Intenta nuevamente.', authLoading: 'Preparando tu espacio...', authNoticeReset: 'Revisa tu correo: enviamos el enlace para restablecer tu contraseña.', installApp: 'Instalar aplicación', installAppDesc: 'Instala anareQ en tu dispositivo para abrirla como una app.', appInstalled: 'Aplicación instalada', installUnavailable: 'La instalación directa no está disponible en este navegador. Usa “Agregar a pantalla de inicio” desde el menú del navegador.', campaignName: 'Nombre de la campaña', campaignPlaceholder: 'Ej: Campaña Ventas Junio',
     navNew: 'Nuevo Diagnóstico', navHistory: 'Historial', navGlossary: 'Glosario', plan: 'Plan', audits: 'Auditorías', logout: 'Cerrar Sesión',
     preferences: 'Preferencias', currency: 'Moneda', language: 'Idioma', appearance: 'Apariencia', darkMode: 'Modo oscuro', lightMode: 'Modo claro', agencyPdf: 'Mi Agencia (Para el PDF)', agencyPlaceholder: 'Nombre de tu agencia o marca',
     liveTotals: 'Totales en tiempo real', spend: 'Gasto', leads: 'Leads', sales: 'Ventas', invoice: 'Factura', revenue: 'Facturación',
@@ -63,10 +64,10 @@ const UI_TRANSLATIONS = {
     goodDiagnosisDesc: 'Como referencia general, busca un MER superior a 3x, una conversión superior a 7%, margen neto mayor a 20%, un CPA rentable para tu negocio y un Score Global superior a 75.',
     noTerm: 'No encontramos ese término', noTermDesc: 'Prueba con otra palabra, cambia la categoría o explora una sugerencia.', suggestionTerms: 'Sugerencias rápidas', meaning: 'Qué significa', formula: 'Fórmula', simpleExample: 'Ejemplo sencillo', quickInterpretation: 'Interpretación rápida', visualReference: 'Referencia visual', actionNow: 'Qué hacer ahora', whyImportant: 'Por qué importa',
     save: 'Guardar', saved: '¡Guardado!', generating: 'Generando...', pdfDynamic: 'PDF', viewReport: 'Ver reporte', newAudit: 'Nuevo', copySummary: 'Copiar Resumen', csvExported: 'CSV Exportado', sharePdf: 'Compartir PDF', pdfShared: 'PDF listo para compartir', pdfDownloadedFallback: 'Tu navegador no permite compartir archivos. El PDF fue descargado.', project: 'Proyecto', businessIntel: 'Inteligencia de Negocio', returnMetric: 'Retorno', conversionLabel: 'Conversión', realMargin: 'Margen Real', globalScore: 'Score Global', conclusion: 'Conclusión', auditSaved: 'Reporte Guardado',
-    formSpendError: 'La inversión publicitaria total (suma de anuncios) debe ser mayor a {currency}0.', formLeadError: 'Debes registrar al menos 1 mensaje o lead en los anuncios.', analysisFailed: 'No se pudo completar el diagnóstico porque había datos históricos incompatibles. La app ya protegió el formulario: intenta generar el diagnóstico nuevamente.', incorrectCode: 'Código incorrecto.', auditNotesPdf: 'Notas de la Auditoría', measurementPreview: 'Vista previa', measurementTitle: 'Confiabilidad de datos Meta', measurementContextNote: 'Este índice aporta contexto y no modifica el score global de rentabilidad.', measurementGood: 'Los datos de Meta ofrecen un contexto de medición sólido para complementar esta auditoría.', measurementWarning: 'Meta puede tener brechas de visibilidad. Contrasta sus resultados con tu facturación y cierres reales.', measurementDanger: 'Tu configuración de medición presenta brechas importantes. Los datos manuales de ventas y facturación son la referencia principal para esta auditoría.', pdfReportTitle: 'Reporte Financiero y Diagnóstico', pdfClient: 'Cliente', pdfGeneratedOn: 'Generado el', pdfPeriod: 'Período', pdfStart: 'Inicio', pdfEnd: 'Fin', unnamedProject: 'Proyecto Sin Nombre', profileTitle: 'Perfil profesional', profileDesc: 'Estos datos aparecerán en tus reportes.', profileName: 'Nombre', profileEmail: 'Correo', profilePhone: 'Teléfono', profileBusiness: 'Marca o negocio', planPro: 'Plan PRO', pdfPreparedBy: 'Preparado por', pdfContact: 'Contacto', pdfExecutiveSummary: 'Resumen ejecutivo', pdfKeyMetrics: 'Métricas clave', pdfScoreComponents: 'Componentes del score', pdfPrimaryBottleneck: 'Principal cuello de botella', pdfRecommendations: 'Recomendaciones', pdfReportFooter: 'Generado con anareQ · Auditoría financiera de Meta Ads', pdfSpend: 'Inversión Ads', pdfRevenue: 'Facturación', pdfProfit: 'Ganancia publicitaria', pdfNetProfit: 'Ganancia neta real', pdfTicket: 'Ticket promedio', pdfNetMargin: 'Margen neto', pdfAdsScore: 'Retorno publicitario', pdfSalesScore: 'Cierre de ventas', pdfMarginScore: 'Margen del negocio', pdfStabilityScore: 'Estabilidad estadística', adLabel: 'Anuncio', messages: 'Mensajes', measurementSetupTitle: 'Diagnóstico de configuración de medición', measurementSetupDesc: 'Contextualiza qué tan confiables son los datos que Meta reporta. Opcional · 30 segundos.', diagnosisTitle: 'Diagnóstico de Rentabilidad', evolutionTitle: 'Evolución vs. auditoría seleccionada', evolutionDesc: 'Cambios visibles para explicar avances o retrocesos sin calcularlos manualmente.', adsScore: 'Ads Score', salesScore: 'Sales Score', marginScoreLabel: 'Margin Score', stability: 'Estabilidad', primaryBottleneck: 'Principal cuello de botella', bottleneckNote: 'Las recomendaciones siguientes priorizan este componente para que sepas qué corregir primero.', budgetMetaReference: 'Presupuesto Meta · Referencial', setAdLabel: 'Conjunto / Anuncio', investment: 'Inversión', status: 'Estado', profitabilityCosts: 'Rentabilidad y Costos de Operación', totalCostsAds: 'Total Gastos + Ads', netProfit: 'Ganancia Neta Real', operatingNetMargin: 'Margen Neto Operativo', fixedCostConcept: 'Concepto (Gasto Fijo)', amount: 'Monto', revenuePercent: '% Facturación', totalAdsInvestment: 'Inversión en Ads Total', negative: 'Negativo', roiLabel: 'ROI %', avgTicketShort: 'Ticket Prom.', perSale: 'Por venta', capitalDistribution: 'Distribución de Capital Total', opCostsShort: 'Costos Op.', realNetShort: 'Neta Real', acquisition: 'Adquisición', acquisitionDesc: '% de la facturación que se va en Ads', copyableSummary: 'Resumen Copiable', clientPlaceholder: 'Ej: Clínica Dental Sur', adSetPlaceholder: 'Nota o nombre del conjunto (Ej: Intereses Broad)', expensePlaceholder: 'Ej: Nómina', copied: 'Copiado', copiedDesc: 'Resumen copiado al portapapeles.', auditSavedDesc: 'Auditoría guardada correctamente.', csvExportedDesc: 'auditorías exportadas correctamente.', improveGlobal: 'Mejora global', reviewRegression: 'Revisar retroceso', noConversions: 'SIN CONVERSIONES', leader: 'LÍDER', functional: 'FUNCIONAL', dragging: 'ARRASTRAR', excellent: 'Excelente', positive: 'Positivo', loss: 'Pérdida', tooltipAdsGlobal: 'Mide la eficiencia de la inversión publicitaria, CPL, CPA, MER y confiabilidad.', tooltipBusinessScore: 'Mide la rentabilidad neta final después de descontar publicidad y costos operativos.', tooltipAdsScore: 'Mide el retorno MER.', tooltipSalesScore: 'Mide la eficacia del cierre de ventas.', tooltipMarginScore: 'Mide la rentabilidad neta operativa.', tooltipStability: 'Mide la confiabilidad estadística: a mayor volumen, mayor estabilidad.', tooltipOperatingMargin: 'Porcentaje de ganancia limpia después de descontar Ads y costos operativos.', tooltipAdProfit: 'Facturación total menos inversión publicitaria. No descuenta gastos operativos.', tooltipRoi: 'Retorno sobre la inversión. Más de 100% significa que duplicaste el monto invertido.', tooltipTicket: 'Ingreso promedio generado por cada venta.', includesBusinessAnalysis: 'Incluye análisis de negocio', grossProfitAds: 'Ganancia bruta (solo Ads)', advertisingLoss: 'Pérdida publicitaria', globalMer: 'MER Global', avgCpa: 'CPA Promedio', avgCpl: 'CPL Promedio', fair: 'Justo', dangerLabel: 'Peligro', expectedMin: 'Mín. esperado >7%', performance: 'Rendimiento', merTip: 'Cuánto se facturó en total por cada unidad monetaria invertida.', cpaTip: 'Costo promedio para conseguir una venta real.', cplTip: 'Costo promedio para generar un lead o mensaje.', conversionTip: 'Porcentaje de leads que terminó comprando.' 
+    formSpendError: 'La inversión publicitaria total (suma de anuncios) debe ser mayor a {currency}0.', formLeadError: 'Debes registrar al menos 1 mensaje o lead en los anuncios.', analysisFailed: 'No se pudo completar el diagnóstico porque había datos históricos incompatibles. La app ya protegió el formulario: intenta generar el diagnóstico nuevamente.', incorrectCode: 'Código incorrecto.', auditNotesPdf: 'Notas de la Auditoría', measurementPreview: 'Vista previa', measurementTitle: 'Confiabilidad de datos Meta', measurementContextNote: 'Este índice aporta contexto y no modifica el score global de rentabilidad.', measurementGood: 'Los datos de Meta ofrecen un contexto de medición sólido para complementar esta auditoría.', measurementWarning: 'Meta puede tener brechas de visibilidad. Contrasta sus resultados con tu facturación y cierres reales.', measurementDanger: 'Tu configuración de medición presenta brechas importantes. Los datos manuales de ventas y facturación son la referencia principal para esta auditoría.', pdfReportTitle: 'Reporte Financiero y Diagnóstico', pdfClient: 'Cliente', pdfGeneratedOn: 'Generado el', pdfPeriod: 'Período', pdfStart: 'Inicio', pdfEnd: 'Fin', unnamedProject: 'Proyecto Sin Nombre', profileTitle: 'Perfil profesional', profileDesc: 'Estos datos aparecerán en tus reportes.', profileName: 'Nombre', profileEmail: 'Correo', profilePhone: 'Teléfono', profileBusiness: 'Marca o negocio', planPro: 'Plan PRO', pdfPreparedBy: 'Preparado por', pdfContact: 'Contacto', pdfExecutiveSummary: 'Resumen ejecutivo', pdfKeyMetrics: 'Métricas clave', pdfScoreComponents: 'Componentes del score', pdfPrimaryBottleneck: 'Principal cuello de botella', pdfRecommendations: 'Recomendaciones', pdfReportFooter: 'Generado con anareQ · Auditoría financiera de Meta Ads', pdfSpend: 'Inversión Ads', pdfRevenue: 'Facturación', pdfProfit: 'Ganancia publicitaria', pdfNetProfit: 'Ganancia neta real', pdfTicket: 'Ticket promedio', pdfNetMargin: 'Margen neto', pdfAdsScore: 'Retorno publicitario', pdfSalesScore: 'Cierre de ventas', pdfMarginScore: 'Margen del negocio', pdfStabilityScore: 'Estabilidad estadística', adLabel: 'Anuncio', messages: 'Mensajes', measurementSetupTitle: 'Diagnóstico de configuración de medición', measurementSetupDesc: 'Contextualiza qué tan confiables son los datos que Meta reporta. Opcional · 30 segundos.', diagnosisTitle: 'Diagnóstico de Rentabilidad', evolutionTitle: 'Evolución vs. auditoría seleccionada', evolutionDesc: 'Cambios visibles para explicar avances o retrocesos sin calcularlos manualmente.', adsScore: 'Ads Score', salesScore: 'Sales Score', marginScoreLabel: 'Margin Score', stability: 'Estabilidad', primaryBottleneck: 'Principal cuello de botella', bottleneckNote: 'Las recomendaciones siguientes priorizan este componente para que sepas qué corregir primero.', budgetMetaReference: 'Presupuesto Meta · Referencial', advancedPacingAnalysis: 'Análisis Avanzado de Pauta', setAdLabel: 'Conjunto / Anuncio', investment: 'Inversión', status: 'Estado', profitabilityCosts: 'Rentabilidad y Costos de Operación', totalCostsAds: 'Total Gastos + Ads', netProfit: 'Ganancia Neta Real', operatingNetMargin: 'Margen Neto Operativo', fixedCostConcept: 'Concepto (Gasto Fijo)', amount: 'Monto', revenuePercent: '% Facturación', totalAdsInvestment: 'Inversión en Ads Total', negative: 'Negativo', roiLabel: 'ROI %', avgTicketShort: 'Ticket Prom.', perSale: 'Por venta', capitalDistribution: 'Distribución de Capital Total', opCostsShort: 'Costos Op.', realNetShort: 'Neta Real', acquisition: 'Adquisición', acquisitionDesc: '% de la facturación que se va en Ads', copyableSummary: 'Resumen Copiable', clientPlaceholder: 'Ej: Clínica Dental Sur', adSetPlaceholder: 'Nota o nombre del conjunto (Ej: Intereses Broad)', expensePlaceholder: 'Ej: Nómina', copied: 'Copiado', copiedDesc: 'Resumen copiado al portapapeles.', auditSavedDesc: 'Auditoría guardada correctamente.', cloudSyncFailed: 'Sincronización pendiente', cloudSyncFailedDesc: 'La auditoría quedó guardada en este dispositivo, pero no pudo sincronizarse con la nube. Revisa tu conexión e inténtalo nuevamente.', csvExportedDesc: 'auditorías exportadas correctamente.', improveGlobal: 'Mejora global', reviewRegression: 'Revisar retroceso', noConversions: 'SIN CONVERSIONES', leader: 'LÍDER', functional: 'FUNCIONAL', dragging: 'ARRASTRAR', excellent: 'Excelente', positive: 'Positivo', loss: 'Pérdida', tooltipAdsGlobal: 'Mide la eficiencia de la inversión publicitaria, CPL, CPA, MER y confiabilidad.', tooltipBusinessScore: 'Mide la rentabilidad neta final después de descontar publicidad y costos operativos.', tooltipAdsScore: 'Mide el retorno MER.', tooltipSalesScore: 'Mide la eficacia del cierre de ventas.', tooltipMarginScore: 'Mide la rentabilidad neta operativa.', tooltipStability: 'Mide la confiabilidad estadística: a mayor volumen, mayor estabilidad.', tooltipOperatingMargin: 'Porcentaje de ganancia limpia después de descontar Ads y costos operativos.', tooltipAdProfit: 'Facturación total menos inversión publicitaria. No descuenta gastos operativos.', tooltipRoi: 'Retorno sobre la inversión. Más de 100% significa que duplicaste el monto invertido.', tooltipTicket: 'Ingreso promedio generado por cada venta.', includesBusinessAnalysis: 'Incluye análisis de negocio', grossProfitAds: 'Ganancia bruta (solo Ads)', advertisingLoss: 'Pérdida publicitaria', globalMer: 'MER Global', avgCpa: 'CPA Promedio', avgCpl: 'CPL Promedio', fair: 'Justo', dangerLabel: 'Peligro', expectedMin: 'Mín. esperado >7%', performance: 'Rendimiento', merTip: 'Cuánto se facturó en total por cada unidad monetaria invertida.', cpaTip: 'Costo promedio para conseguir una venta real.', cplTip: 'Costo promedio para generar un lead o mensaje.', conversionTip: 'Porcentaje de leads que terminó comprando.' 
   },
   en: {
-    appSubtitle: 'Business Profitability Intelligence', accessCode: 'Access code...', enterSystem: 'Enter System', authWelcome: 'Welcome to anareQ', authDesc: 'Turn Meta Ads metrics into profitable decisions and professional reports.', continueGoogle: 'Continue with Google', orEmail: 'or continue with email', email: 'Email address', password: 'Password', signIn: 'Sign in', createAccount: 'Create account', noAccount: 'Do not have an account yet?', alreadyAccount: 'Already have an account?', forgotPassword: 'Forgot my password', resetSent: 'We sent you a password reset email.', authRequired: 'Enter your email and password.', authInvalidEmail: 'Enter a valid email address.', authWrongPassword: 'The email or password is incorrect.', authEmailInUse: 'That email already has an account.', authWeakPassword: 'Use a password with at least 6 characters.', authPopupClosed: 'Google sign-in was cancelled.', authGeneric: 'We could not sign you in. Try again.', authLoading: 'Preparing your workspace...',
+    appSubtitle: 'Business Profitability Intelligence', accessCode: 'Access code...', enterSystem: 'Enter System', authWelcome: 'Welcome to anareQ', authDesc: 'Turn Meta Ads metrics into profitable decisions and professional reports.', continueGoogle: 'Continue with Google', orEmail: 'or continue with Google', email: 'Email address', password: 'Password', signIn: 'Sign in', createAccount: 'Create account', noAccount: 'Do not have an account yet?', alreadyAccount: 'Already have an account?', forgotPassword: 'Forgot my password', resetSent: 'We sent you a password reset email.', authRequired: 'Enter your email and password.', authInvalidEmail: 'Enter a valid email address.', authWrongPassword: 'The email or password is incorrect.', authEmailInUse: 'That email already has an account.', authWeakPassword: 'Use a password with at least 6 characters.', authPopupClosed: 'Google sign-in was cancelled.', authGeneric: 'We could not sign you in. Try again.', authLoading: 'Preparing your workspace...', authNoticeReset: 'Check your inbox: we sent the password reset link.', installApp: 'Install app', installAppDesc: 'Install anareQ on your device to open it like an app.', appInstalled: 'App installed', installUnavailable: 'Direct installation is not available in this browser. Use “Add to Home Screen” from your browser menu.', campaignName: 'Campaign name', campaignPlaceholder: 'E.g. June Sales Campaign',
     navNew: 'New Audit', navHistory: 'History', navGlossary: 'Glossary', plan: 'Plan', audits: 'Audits', logout: 'Log Out',
     preferences: 'Preferences', currency: 'Currency', language: 'Language', appearance: 'Appearance', darkMode: 'Dark mode', lightMode: 'Light mode', agencyPdf: 'My Agency (For PDF)', agencyPlaceholder: 'Your agency or brand name',
     liveTotals: 'Live totals', spend: 'Spend', leads: 'Leads', sales: 'Sales', invoice: 'Revenue', revenue: 'Revenue',
@@ -85,10 +86,10 @@ const UI_TRANSLATIONS = {
     goodDiagnosisDesc: 'As a general reference, look for MER above 3x, conversion above 7%, net margin above 20%, a profitable CPA for your business and a Global Score above 75.',
     noTerm: 'We could not find that term', noTermDesc: 'Try another word, change the category or explore a suggestion.', suggestionTerms: 'Quick suggestions', meaning: 'What it means', formula: 'Formula', simpleExample: 'Simple example', quickInterpretation: 'Quick interpretation', visualReference: 'Visual reference', actionNow: 'What to do now', whyImportant: 'Why it matters',
     save: 'Save', saved: 'Saved!', generating: 'Generating...', pdfDynamic: 'PDF', viewReport: 'View report', newAudit: 'New', copySummary: 'Copy Summary', csvExported: 'CSV Exported', sharePdf: 'Share PDF', pdfShared: 'PDF ready to share', pdfDownloadedFallback: 'Your browser does not allow file sharing. The PDF was downloaded instead.', project: 'Project', businessIntel: 'Business Intelligence', returnMetric: 'Return', conversionLabel: 'Conversion', realMargin: 'Real Margin', globalScore: 'Global Score', conclusion: 'Conclusion', auditSaved: 'Report Saved',
-    formSpendError: 'Total advertising spend (sum of ads) must be greater than {currency}0.', formLeadError: 'Enter at least 1 message or lead in the ads.', analysisFailed: 'The diagnosis could not be completed because incompatible historical data was detected. The form was protected: generate the diagnosis again.', incorrectCode: 'Incorrect code.', auditNotesPdf: 'Audit Notes', measurementPreview: 'Preview', measurementTitle: 'Meta data reliability', measurementContextNote: 'This index provides context and does not change the global profitability score.', measurementGood: 'Meta data provides a solid measurement context to complement this audit.', measurementWarning: 'Meta may have visibility gaps. Compare its results with your actual revenue and closed sales.', measurementDanger: 'Your measurement setup has important gaps. Manual sales and revenue data are the primary reference for this audit.', pdfReportTitle: 'Financial Report and Diagnosis', pdfClient: 'Client', pdfGeneratedOn: 'Generated on', pdfPeriod: 'Period', pdfStart: 'Start', pdfEnd: 'End', unnamedProject: 'Unnamed Project', profileTitle: 'Professional profile', profileDesc: 'These details will appear in your reports.', profileName: 'Name', profileEmail: 'Email', profilePhone: 'Phone', profileBusiness: 'Brand or business', planPro: 'PRO Plan', pdfPreparedBy: 'Prepared by', pdfContact: 'Contact', pdfExecutiveSummary: 'Executive summary', pdfKeyMetrics: 'Key metrics', pdfScoreComponents: 'Score components', pdfPrimaryBottleneck: 'Primary bottleneck', pdfRecommendations: 'Recommendations', pdfReportFooter: 'Generated with anareQ · Meta Ads financial audit', pdfSpend: 'Ads spend', pdfRevenue: 'Revenue', pdfProfit: 'Advertising profit', pdfNetProfit: 'Real net profit', pdfTicket: 'Average ticket', pdfNetMargin: 'Net margin', pdfAdsScore: 'Advertising return', pdfSalesScore: 'Sales closing', pdfMarginScore: 'Business margin', pdfStabilityScore: 'Statistical stability', adLabel: 'Ad', messages: 'Messages', measurementSetupTitle: 'Measurement setup diagnosis', measurementSetupDesc: 'Adds context on how reliable Meta-reported data is. Optional · 30 seconds.', diagnosisTitle: 'Profitability Diagnosis', evolutionTitle: 'Evolution vs. selected audit', evolutionDesc: 'Visible changes to explain progress or setbacks without manual calculations.', adsScore: 'Ads Score', salesScore: 'Sales Score', marginScoreLabel: 'Margin Score', stability: 'Stability', primaryBottleneck: 'Primary bottleneck', bottleneckNote: 'The following recommendations prioritize this component so you know what to fix first.', budgetMetaReference: 'Meta Budget · Reference', setAdLabel: 'Ad Set / Ad', investment: 'Investment', status: 'Status', profitabilityCosts: 'Profitability and Operating Costs', totalCostsAds: 'Total Costs + Ads', netProfit: 'Real Net Profit', operatingNetMargin: 'Operating Net Margin', fixedCostConcept: 'Concept (Fixed Cost)', amount: 'Amount', revenuePercent: '% Revenue', totalAdsInvestment: 'Total Ads Investment', negative: 'Negative', roiLabel: 'ROI %', avgTicketShort: 'Avg. Ticket', perSale: 'Per sale', capitalDistribution: 'Total Capital Distribution', opCostsShort: 'Op. Costs', realNetShort: 'Real Net', acquisition: 'Acquisition', acquisitionDesc: '% of revenue spent on Ads', copyableSummary: 'Copyable Summary', clientPlaceholder: 'E.g. South Dental Clinic', adSetPlaceholder: 'Ad set note or name (E.g. Broad Interests)', expensePlaceholder: 'E.g. Payroll', copied: 'Copied', copiedDesc: 'Summary copied to clipboard.', auditSavedDesc: 'Audit saved successfully.', csvExportedDesc: 'audits exported successfully.', improveGlobal: 'Global improvement', reviewRegression: 'Review setback', noConversions: 'NO CONVERSIONS', leader: 'LEADER', functional: 'FUNCTIONAL', dragging: 'DRAGGING', excellent: 'Excellent', positive: 'Positive', loss: 'Loss', tooltipAdsGlobal: 'Measures advertising efficiency, CPL, CPA, MER and data reliability.', tooltipBusinessScore: 'Measures final net profitability after advertising and operating costs.', tooltipAdsScore: 'Measures MER return.', tooltipSalesScore: 'Measures sales closing effectiveness.', tooltipMarginScore: 'Measures operating net profitability.', tooltipStability: 'Measures statistical reliability: more volume means greater stability.', tooltipOperatingMargin: 'Clean profit percentage after Ads and operating costs.', tooltipAdProfit: 'Total revenue minus advertising spend. It does not subtract operating costs.', tooltipRoi: 'Return on investment. Above 100% means you doubled the invested amount.', tooltipTicket: 'Average income generated per sale.', includesBusinessAnalysis: 'Includes business analysis', grossProfitAds: 'Gross profit (Ads only)', advertisingLoss: 'Advertising loss', globalMer: 'Global MER', avgCpa: 'Average CPA', avgCpl: 'Average CPL', fair: 'Fair', dangerLabel: 'Risk', expectedMin: 'Expected min. >7%', performance: 'Performance', merTip: 'Total revenue generated for each currency unit invested.', cpaTip: 'Average cost to generate a real sale.', cplTip: 'Average cost to generate a lead or message.', conversionTip: 'Percentage of leads that became customers.' 
+    formSpendError: 'Total advertising spend (sum of ads) must be greater than {currency}0.', formLeadError: 'Enter at least 1 message or lead in the ads.', analysisFailed: 'The diagnosis could not be completed because incompatible historical data was detected. The form was protected: generate the diagnosis again.', incorrectCode: 'Incorrect code.', auditNotesPdf: 'Audit Notes', measurementPreview: 'Preview', measurementTitle: 'Meta data reliability', measurementContextNote: 'This index provides context and does not change the global profitability score.', measurementGood: 'Meta data provides a solid measurement context to complement this audit.', measurementWarning: 'Meta may have visibility gaps. Compare its results with your actual revenue and closed sales.', measurementDanger: 'Your measurement setup has important gaps. Manual sales and revenue data are the primary reference for this audit.', pdfReportTitle: 'Financial Report and Diagnosis', pdfClient: 'Client', pdfGeneratedOn: 'Generated on', pdfPeriod: 'Period', pdfStart: 'Start', pdfEnd: 'End', unnamedProject: 'Unnamed Project', profileTitle: 'Professional profile', profileDesc: 'These details will appear in your reports.', profileName: 'Name', profileEmail: 'Email', profilePhone: 'Phone', profileBusiness: 'Brand or business', planPro: 'PRO Plan', pdfPreparedBy: 'Prepared by', pdfContact: 'Contact', pdfExecutiveSummary: 'Executive summary', pdfKeyMetrics: 'Key metrics', pdfScoreComponents: 'Score components', pdfPrimaryBottleneck: 'Primary bottleneck', pdfRecommendations: 'Recommendations', pdfReportFooter: 'Generated with anareQ · Meta Ads financial audit', pdfSpend: 'Ads spend', pdfRevenue: 'Revenue', pdfProfit: 'Advertising profit', pdfNetProfit: 'Real net profit', pdfTicket: 'Average ticket', pdfNetMargin: 'Net margin', pdfAdsScore: 'Advertising return', pdfSalesScore: 'Sales closing', pdfMarginScore: 'Business margin', pdfStabilityScore: 'Statistical stability', adLabel: 'Ad', messages: 'Messages', measurementSetupTitle: 'Measurement setup diagnosis', measurementSetupDesc: 'Adds context on how reliable Meta-reported data is. Optional · 30 seconds.', diagnosisTitle: 'Profitability Diagnosis', evolutionTitle: 'Evolution vs. selected audit', evolutionDesc: 'Visible changes to explain progress or setbacks without manual calculations.', adsScore: 'Ads Score', salesScore: 'Sales Score', marginScoreLabel: 'Margin Score', stability: 'Stability', primaryBottleneck: 'Primary bottleneck', bottleneckNote: 'The following recommendations prioritize this component so you know what to fix first.', budgetMetaReference: 'Meta Budget · Reference', advancedPacingAnalysis: 'Advanced Campaign Analysis', setAdLabel: 'Ad Set / Ad', investment: 'Investment', status: 'Status', profitabilityCosts: 'Profitability and Operating Costs', totalCostsAds: 'Total Costs + Ads', netProfit: 'Real Net Profit', operatingNetMargin: 'Operating Net Margin', fixedCostConcept: 'Concept (Fixed Cost)', amount: 'Amount', revenuePercent: '% Revenue', totalAdsInvestment: 'Total Ads Investment', negative: 'Negative', roiLabel: 'ROI %', avgTicketShort: 'Avg. Ticket', perSale: 'Per sale', capitalDistribution: 'Total Capital Distribution', opCostsShort: 'Op. Costs', realNetShort: 'Real Net', acquisition: 'Acquisition', acquisitionDesc: '% of revenue spent on Ads', copyableSummary: 'Copyable Summary', clientPlaceholder: 'E.g. South Dental Clinic', adSetPlaceholder: 'Ad set note or name (E.g. Broad Interests)', expensePlaceholder: 'E.g. Payroll', copied: 'Copied', copiedDesc: 'Summary copied to clipboard.', auditSavedDesc: 'Audit saved successfully.', cloudSyncFailed: 'Sync pending', cloudSyncFailedDesc: 'The audit was saved on this device, but it could not sync to the cloud. Check your connection and try again.', csvExportedDesc: 'audits exported successfully.', improveGlobal: 'Global improvement', reviewRegression: 'Review setback', noConversions: 'NO CONVERSIONS', leader: 'LEADER', functional: 'FUNCTIONAL', dragging: 'DRAGGING', excellent: 'Excellent', positive: 'Positive', loss: 'Loss', tooltipAdsGlobal: 'Measures advertising efficiency, CPL, CPA, MER and data reliability.', tooltipBusinessScore: 'Measures final net profitability after advertising and operating costs.', tooltipAdsScore: 'Measures MER return.', tooltipSalesScore: 'Measures sales closing effectiveness.', tooltipMarginScore: 'Measures operating net profitability.', tooltipStability: 'Measures statistical reliability: more volume means greater stability.', tooltipOperatingMargin: 'Clean profit percentage after Ads and operating costs.', tooltipAdProfit: 'Total revenue minus advertising spend. It does not subtract operating costs.', tooltipRoi: 'Return on investment. Above 100% means you doubled the invested amount.', tooltipTicket: 'Average income generated per sale.', includesBusinessAnalysis: 'Includes business analysis', grossProfitAds: 'Gross profit (Ads only)', advertisingLoss: 'Advertising loss', globalMer: 'Global MER', avgCpa: 'Average CPA', avgCpl: 'Average CPL', fair: 'Fair', dangerLabel: 'Risk', expectedMin: 'Expected min. >7%', performance: 'Performance', merTip: 'Total revenue generated for each currency unit invested.', cpaTip: 'Average cost to generate a real sale.', cplTip: 'Average cost to generate a lead or message.', conversionTip: 'Percentage of leads that became customers.' 
   },
   pt: {
-    appSubtitle: 'Inteligência de Rentabilidade Empresarial', accessCode: 'Código de acesso...', enterSystem: 'Entrar no Sistema', authWelcome: 'Bem-vindo ao anareQ', authDesc: 'Transforme métricas do Meta Ads em decisões rentáveis e relatórios profissionais.', continueGoogle: 'Continuar com Google', orEmail: 'ou continue com seu e-mail', email: 'E-mail', password: 'Senha', signIn: 'Entrar', createAccount: 'Criar conta', noAccount: 'Ainda não tem uma conta?', alreadyAccount: 'Já possui uma conta?', forgotPassword: 'Esqueci minha senha', resetSent: 'Enviamos um e-mail para redefinir sua senha.', authRequired: 'Preencha seu e-mail e senha.', authInvalidEmail: 'Digite um e-mail válido.', authWrongPassword: 'O e-mail ou a senha estão incorretos.', authEmailInUse: 'Esse e-mail já possui uma conta.', authWeakPassword: 'Use uma senha com pelo menos 6 caracteres.', authPopupClosed: 'O login com Google foi cancelado.', authGeneric: 'Não foi possível entrar. Tente novamente.', authLoading: 'Preparando seu espaço...',
+    appSubtitle: 'Inteligência de Rentabilidade Empresarial', accessCode: 'Código de acesso...', enterSystem: 'Entrar no Sistema', authWelcome: 'Bem-vindo ao anareQ', authDesc: 'Transforme métricas do Meta Ads em decisões rentáveis e relatórios profissionais.', continueGoogle: 'Continuar com Google', orEmail: 'ou continue com Google', email: 'E-mail', password: 'Senha', signIn: 'Entrar', createAccount: 'Criar conta', noAccount: 'Ainda não tem uma conta?', alreadyAccount: 'Já possui uma conta?', forgotPassword: 'Esqueci minha senha', resetSent: 'Enviamos um e-mail para redefinir sua senha.', authRequired: 'Preencha seu e-mail e senha.', authInvalidEmail: 'Digite um e-mail válido.', authWrongPassword: 'O e-mail ou a senha estão incorretos.', authEmailInUse: 'Esse e-mail já possui uma conta.', authWeakPassword: 'Use uma senha com pelo menos 6 caracteres.', authPopupClosed: 'O login com Google foi cancelado.', authGeneric: 'Não foi possível entrar. Tente novamente.', authLoading: 'Preparando seu espaço...', authNoticeReset: 'Confira seu e-mail: enviamos o link para redefinir sua senha.', installApp: 'Instalar aplicativo', installAppDesc: 'Instale o anareQ no seu dispositivo para abrir como um aplicativo.', appInstalled: 'Aplicativo instalado', installUnavailable: 'A instalação direta não está disponível neste navegador. Use “Adicionar à tela inicial” no menu do navegador.', campaignName: 'Nome da campanha', campaignPlaceholder: 'Ex: Campanha de Vendas Junho',
     navNew: 'Novo Diagnóstico', navHistory: 'Histórico', navGlossary: 'Glossário', plan: 'Plano', audits: 'Auditorias', logout: 'Sair',
     preferences: 'Preferências', currency: 'Moeda', language: 'Idioma', appearance: 'Aparência', darkMode: 'Modo escuro', lightMode: 'Modo claro', agencyPdf: 'Minha Agência (Para o PDF)', agencyPlaceholder: 'Nome da sua agência ou marca',
     liveTotals: 'Totais em tempo real', spend: 'Investimento', leads: 'Leads', sales: 'Vendas', invoice: 'Faturamento', revenue: 'Faturamento',
@@ -107,7 +108,7 @@ const UI_TRANSLATIONS = {
     goodDiagnosisDesc: 'Como referência geral, procure MER acima de 3x, conversão acima de 7%, margem líquida acima de 20%, CPA rentável para o negócio e Score Global acima de 75.',
     noTerm: 'Não encontramos esse termo', noTermDesc: 'Tente outra palavra, altere a categoria ou explore uma sugestão.', suggestionTerms: 'Sugestões rápidas', meaning: 'O que significa', formula: 'Fórmula', simpleExample: 'Exemplo simples', quickInterpretation: 'Interpretação rápida', visualReference: 'Referência visual', actionNow: 'O que fazer agora', whyImportant: 'Por que importa',
     save: 'Salvar', saved: 'Salvo!', generating: 'Gerando...', pdfDynamic: 'PDF', viewReport: 'Ver relatório', newAudit: 'Novo', copySummary: 'Copiar Resumo', csvExported: 'CSV Exportado', sharePdf: 'Compartilhar PDF', pdfShared: 'PDF pronto para compartilhar', pdfDownloadedFallback: 'Seu navegador não permite compartilhar arquivos. O PDF foi baixado.', project: 'Projeto', businessIntel: 'Inteligência de Negócio', returnMetric: 'Retorno', conversionLabel: 'Conversão', realMargin: 'Margem Real', globalScore: 'Score Global', conclusion: 'Conclusão', auditSaved: 'Relatório Salvo',
-    formSpendError: 'O investimento publicitário total (soma dos anúncios) deve ser maior que {currency}0.', formLeadError: 'Registre pelo menos 1 mensagem ou lead nos anúncios.', analysisFailed: 'Não foi possível concluir o diagnóstico porque foram detectados dados históricos incompatíveis. O formulário foi protegido: gere o diagnóstico novamente.', incorrectCode: 'Código incorreto.', auditNotesPdf: 'Notas da Auditoria', measurementPreview: 'Prévia', measurementTitle: 'Confiabilidade dos dados da Meta', measurementContextNote: 'Este índice adiciona contexto e não altera o score global de rentabilidade.', measurementGood: 'Os dados da Meta oferecem um contexto sólido de medição para complementar esta auditoria.', measurementWarning: 'A Meta pode ter lacunas de visibilidade. Compare os resultados com seu faturamento e vendas fechadas reais.', measurementDanger: 'Sua configuração de medição apresenta lacunas importantes. Os dados manuais de vendas e faturamento são a principal referência desta auditoria.', pdfReportTitle: 'Relatório Financeiro e Diagnóstico', pdfClient: 'Cliente', pdfGeneratedOn: 'Gerado em', pdfPeriod: 'Período', pdfStart: 'Início', pdfEnd: 'Fim', unnamedProject: 'Projeto Sem Nome', profileTitle: 'Perfil profissional', profileDesc: 'Esses dados aparecerão nos seus relatórios.', profileName: 'Nome', profileEmail: 'E-mail', profilePhone: 'Telefone', profileBusiness: 'Marca ou negócio', planPro: 'Plano PRO', pdfPreparedBy: 'Preparado por', pdfContact: 'Contato', pdfExecutiveSummary: 'Resumo executivo', pdfKeyMetrics: 'Métricas principais', pdfScoreComponents: 'Componentes do score', pdfPrimaryBottleneck: 'Principal gargalo', pdfRecommendations: 'Recomendações', pdfReportFooter: 'Gerado com anareQ · Auditoria financeira de Meta Ads', pdfSpend: 'Investimento em Ads', pdfRevenue: 'Faturamento', pdfProfit: 'Lucro publicitário', pdfNetProfit: 'Lucro líquido real', pdfTicket: 'Ticket médio', pdfNetMargin: 'Margem líquida', pdfAdsScore: 'Retorno publicitário', pdfSalesScore: 'Fechamento de vendas', pdfMarginScore: 'Margem do negócio', pdfStabilityScore: 'Estabilidade estatística', adLabel: 'Anúncio', messages: 'Mensagens', measurementSetupTitle: 'Diagnóstico da configuração de medição', measurementSetupDesc: 'Contextualiza o nível de confiabilidade dos dados reportados pela Meta. Opcional · 30 segundos.', diagnosisTitle: 'Diagnóstico de Rentabilidade', evolutionTitle: 'Evolução vs. auditoria selecionada', evolutionDesc: 'Mudanças visíveis para explicar avanços ou retrocessos sem cálculos manuais.', adsScore: 'Ads Score', salesScore: 'Sales Score', marginScoreLabel: 'Margin Score', stability: 'Estabilidade', primaryBottleneck: 'Principal gargalo', bottleneckNote: 'As recomendações seguintes priorizam este componente para indicar o que corrigir primeiro.', budgetMetaReference: 'Orçamento Meta · Referencial', setAdLabel: 'Conjunto / Anúncio', investment: 'Investimento', status: 'Status', profitabilityCosts: 'Rentabilidade e Custos Operacionais', totalCostsAds: 'Custos Totais + Ads', netProfit: 'Lucro Líquido Real', operatingNetMargin: 'Margem Líquida Operacional', fixedCostConcept: 'Conceito (Custo Fixo)', amount: 'Valor', revenuePercent: '% Faturamento', totalAdsInvestment: 'Investimento Total em Ads', negative: 'Negativo', roiLabel: 'ROI %', avgTicketShort: 'Ticket Médio', perSale: 'Por venda', capitalDistribution: 'Distribuição do Capital Total', opCostsShort: 'Custos Op.', realNetShort: 'Líquido Real', acquisition: 'Aquisição', acquisitionDesc: '% do faturamento destinado a Ads', copyableSummary: 'Resumo Copiável', clientPlaceholder: 'Ex: Clínica Odontológica Sul', adSetPlaceholder: 'Nota ou nome do conjunto (Ex: Interesses amplos)', expensePlaceholder: 'Ex: Folha de pagamento', copied: 'Copiado', copiedDesc: 'Resumo copiado para a área de transferência.', auditSavedDesc: 'Auditoria salva corretamente.', csvExportedDesc: 'auditorias exportadas corretamente.', improveGlobal: 'Melhora global', reviewRegression: 'Revisar retrocesso', noConversions: 'SEM CONVERSÕES', leader: 'LÍDER', functional: 'FUNCIONAL', dragging: 'ARRASTANDO', excellent: 'Excelente', positive: 'Positivo', loss: 'Prejuízo', tooltipAdsGlobal: 'Mede a eficiência do investimento publicitário, CPL, CPA, MER e confiabilidade.', tooltipBusinessScore: 'Mede a rentabilidade líquida final depois de descontar publicidade e custos operacionais.', tooltipAdsScore: 'Mede o retorno MER.', tooltipSalesScore: 'Mede a eficácia do fechamento de vendas.', tooltipMarginScore: 'Mede a rentabilidade líquida operacional.', tooltipStability: 'Mede a confiabilidade estatística: quanto maior o volume, maior a estabilidade.', tooltipOperatingMargin: 'Percentual de lucro limpo depois de descontar Ads e custos operacionais.', tooltipAdProfit: 'Faturamento total menos investimento publicitário. Não desconta custos operacionais.', tooltipRoi: 'Retorno sobre o investimento. Acima de 100% significa que você duplicou o valor investido.', tooltipTicket: 'Receita média gerada por venda.', includesBusinessAnalysis: 'Inclui análise de negócio', grossProfitAds: 'Lucro bruto (somente Ads)', advertisingLoss: 'Prejuízo publicitário', globalMer: 'MER Global', avgCpa: 'CPA Médio', avgCpl: 'CPL Médio', fair: 'Ajustado', dangerLabel: 'Risco', expectedMin: 'Mín. esperado >7%', performance: 'Desempenho', merTip: 'Faturamento total gerado por cada unidade monetária investida.', cpaTip: 'Custo médio para gerar uma venda real.', cplTip: 'Custo médio para gerar um lead ou mensagem.', conversionTip: 'Percentual de leads que comprou.' 
+    formSpendError: 'O investimento publicitário total (soma dos anúncios) deve ser maior que {currency}0.', formLeadError: 'Registre pelo menos 1 mensagem ou lead nos anúncios.', analysisFailed: 'Não foi possível concluir o diagnóstico porque foram detectados dados históricos incompatíveis. O formulário foi protegido: gere o diagnóstico novamente.', incorrectCode: 'Código incorreto.', auditNotesPdf: 'Notas da Auditoria', measurementPreview: 'Prévia', measurementTitle: 'Confiabilidade dos dados da Meta', measurementContextNote: 'Este índice adiciona contexto e não altera o score global de rentabilidade.', measurementGood: 'Os dados da Meta oferecem um contexto sólido de medição para complementar esta auditoria.', measurementWarning: 'A Meta pode ter lacunas de visibilidade. Compare os resultados com seu faturamento e vendas fechadas reais.', measurementDanger: 'Sua configuração de medição apresenta lacunas importantes. Os dados manuais de vendas e faturamento são a principal referência desta auditoria.', pdfReportTitle: 'Relatório Financeiro e Diagnóstico', pdfClient: 'Cliente', pdfGeneratedOn: 'Gerado em', pdfPeriod: 'Período', pdfStart: 'Início', pdfEnd: 'Fim', unnamedProject: 'Projeto Sem Nome', profileTitle: 'Perfil profissional', profileDesc: 'Esses dados aparecerão nos seus relatórios.', profileName: 'Nome', profileEmail: 'E-mail', profilePhone: 'Telefone', profileBusiness: 'Marca ou negócio', planPro: 'Plano PRO', pdfPreparedBy: 'Preparado por', pdfContact: 'Contato', pdfExecutiveSummary: 'Resumo executivo', pdfKeyMetrics: 'Métricas principais', pdfScoreComponents: 'Componentes do score', pdfPrimaryBottleneck: 'Principal gargalo', pdfRecommendations: 'Recomendações', pdfReportFooter: 'Gerado com anareQ · Auditoria financeira de Meta Ads', pdfSpend: 'Investimento em Ads', pdfRevenue: 'Faturamento', pdfProfit: 'Lucro publicitário', pdfNetProfit: 'Lucro líquido real', pdfTicket: 'Ticket médio', pdfNetMargin: 'Margem líquida', pdfAdsScore: 'Retorno publicitário', pdfSalesScore: 'Fechamento de vendas', pdfMarginScore: 'Margem do negócio', pdfStabilityScore: 'Estabilidade estatística', adLabel: 'Anúncio', messages: 'Mensagens', measurementSetupTitle: 'Diagnóstico da configuração de medição', measurementSetupDesc: 'Contextualiza o nível de confiabilidade dos dados reportados pela Meta. Opcional · 30 segundos.', diagnosisTitle: 'Diagnóstico de Rentabilidade', evolutionTitle: 'Evolução vs. auditoria selecionada', evolutionDesc: 'Mudanças visíveis para explicar avanços ou retrocessos sem cálculos manuais.', adsScore: 'Ads Score', salesScore: 'Sales Score', marginScoreLabel: 'Margin Score', stability: 'Estabilidade', primaryBottleneck: 'Principal gargalo', bottleneckNote: 'As recomendações seguintes priorizam este componente para indicar o que corrigir primeiro.', budgetMetaReference: 'Orçamento Meta · Referencial', advancedPacingAnalysis: 'Análise Avançada de Campanha', setAdLabel: 'Conjunto / Anúncio', investment: 'Investimento', status: 'Status', profitabilityCosts: 'Rentabilidade e Custos Operacionais', totalCostsAds: 'Custos Totais + Ads', netProfit: 'Lucro Líquido Real', operatingNetMargin: 'Margem Líquida Operacional', fixedCostConcept: 'Conceito (Custo Fixo)', amount: 'Valor', revenuePercent: '% Faturamento', totalAdsInvestment: 'Investimento Total em Ads', negative: 'Negativo', roiLabel: 'ROI %', avgTicketShort: 'Ticket Médio', perSale: 'Por venda', capitalDistribution: 'Distribuição do Capital Total', opCostsShort: 'Custos Op.', realNetShort: 'Líquido Real', acquisition: 'Aquisição', acquisitionDesc: '% do faturamento destinado a Ads', copyableSummary: 'Resumo Copiável', clientPlaceholder: 'Ex: Clínica Odontológica Sul', adSetPlaceholder: 'Nota ou nome do conjunto (Ex: Interesses amplos)', expensePlaceholder: 'Ex: Folha de pagamento', copied: 'Copiado', copiedDesc: 'Resumo copiado para a área de transferência.', auditSavedDesc: 'Auditoria salva corretamente.', cloudSyncFailed: 'Sincronização pendente', cloudSyncFailedDesc: 'A auditoria foi salva neste dispositivo, mas não foi possível sincronizá-la com a nuvem. Verifique sua conexão e tente novamente.', csvExportedDesc: 'auditorias exportadas corretamente.', improveGlobal: 'Melhora global', reviewRegression: 'Revisar retrocesso', noConversions: 'SEM CONVERSÕES', leader: 'LÍDER', functional: 'FUNCIONAL', dragging: 'ARRASTANDO', excellent: 'Excelente', positive: 'Positivo', loss: 'Prejuízo', tooltipAdsGlobal: 'Mede a eficiência do investimento publicitário, CPL, CPA, MER e confiabilidade.', tooltipBusinessScore: 'Mede a rentabilidade líquida final depois de descontar publicidade e custos operacionais.', tooltipAdsScore: 'Mede o retorno MER.', tooltipSalesScore: 'Mede a eficácia do fechamento de vendas.', tooltipMarginScore: 'Mede a rentabilidade líquida operacional.', tooltipStability: 'Mede a confiabilidade estatística: quanto maior o volume, maior a estabilidade.', tooltipOperatingMargin: 'Percentual de lucro limpo depois de descontar Ads e custos operacionais.', tooltipAdProfit: 'Faturamento total menos investimento publicitário. Não desconta custos operacionais.', tooltipRoi: 'Retorno sobre o investimento. Acima de 100% significa que você duplicou o valor investido.', tooltipTicket: 'Receita média gerada por venda.', includesBusinessAnalysis: 'Inclui análise de negócio', grossProfitAds: 'Lucro bruto (somente Ads)', advertisingLoss: 'Prejuízo publicitário', globalMer: 'MER Global', avgCpa: 'CPA Médio', avgCpl: 'CPL Médio', fair: 'Ajustado', dangerLabel: 'Risco', expectedMin: 'Mín. esperado >7%', performance: 'Desempenho', merTip: 'Faturamento total gerado por cada unidade monetária investida.', cpaTip: 'Custo médio para gerar uma venda real.', cplTip: 'Custo médio para gerar um lead ou mensagem.', conversionTip: 'Percentual de leads que comprou.' 
   }
 };
 
@@ -379,6 +380,47 @@ const normalizeStoredHistoryRecord = (item) => {
 const sanitizeStoredHistory = (items) => Array.isArray(items)
   ? items.map(normalizeStoredHistoryRecord).filter(Boolean)
   : [];
+
+// --- HISTORIAL SaaS: FIRESTORE COMO FUENTE PRINCIPAL + RESPALDO LOCAL POR USUARIO ---
+const getHistoryStorageKey = (uid) => `anareqHistory:${uid}`;
+
+const readLocalHistoryBackup = (uid) => {
+  if (!uid) return { history: [], usedLegacyBackup: false };
+  try {
+    const scoped = localStorage.getItem(getHistoryStorageKey(uid));
+    if (scoped) return { history: sanitizeStoredHistory(JSON.parse(scoped)), usedLegacyBackup: false };
+
+    // Migración única y conservadora desde versiones anteriores:
+    // solo se considera el historial global si todavía no existe respaldo aislado para este uid.
+    const legacy = localStorage.getItem('anareqHistory');
+    return legacy
+      ? { history: sanitizeStoredHistory(JSON.parse(legacy)), usedLegacyBackup: true }
+      : { history: [], usedLegacyBackup: false };
+  } catch (error) {
+    console.warn('Could not read local history backup:', error);
+    return { history: [], usedLegacyBackup: false };
+  }
+};
+
+const saveLocalHistoryBackup = (uid, items) => {
+  if (!uid) return;
+  try {
+    localStorage.setItem(getHistoryStorageKey(uid), JSON.stringify(sanitizeStoredHistory(items)));
+  } catch (error) {
+    console.warn('Could not persist local history backup:', error);
+  }
+};
+
+const mergeHistoryRecords = (...collections) => {
+  const byId = new Map();
+  collections.flat().forEach((item) => {
+    const safeItem = normalizeStoredHistoryRecord(item);
+    if (!safeItem) return;
+    const stableId = safeItem.id || `${safeItem.clientName}:${safeItem.date}`;
+    if (!byId.has(stableId)) byId.set(stableId, safeItem);
+  });
+  return [...byId.values()].sort((a, b) => new Date(b?.date || 0) - new Date(a?.date || 0));
+};
 
 const EMPTY_MEASUREMENT_ANSWERS = {
   trackingMethod: '',
@@ -1646,13 +1688,16 @@ function AnareQApp() {
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [authNotice, setAuthNotice] = useState('');
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+  const [isStandaloneApp, setIsStandaloneApp] = useState(false);
   
   const [activeTab, setActiveTab] = useState('new'); 
   const [clientName, setClientName] = useState('');
   const [includeOpCosts, setIncludeOpCosts] = useState(false); 
 
-  const [formData, setFormData] = useState({ startDate: '', endDate: '', budget: '', generalNotes: '' });
+  const [formData, setFormData] = useState({ campaignName: '', startDate: '', endDate: '', budget: '', generalNotes: '' });
   
   // Nivel 2: Conjuntos -> Anuncios
   const [adSets, setAdSets] = useState([{
@@ -1685,8 +1730,8 @@ function AnareQApp() {
   const [languageCode, setLanguageCode] = useState('es');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [accountProfile, setAccountProfile] = useState({
-    name: 'Jezeel',
-    email: 'jezeeljoxue@gmail.com',
+    name: '',
+    email: '',
     phone: '',
     businessName: ''
   });
@@ -1694,14 +1739,15 @@ function AnareQApp() {
   const reportContainerRef = useRef(null);
   const userMenuRef = useRef(null);
 
+  const profileDisplayName = accountProfile.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Usuario';
+  const profileDisplayEmail = accountProfile.email || currentUser?.email || '';
   const userData = {
-    name: accountProfile.name || 'Jezeel',
-    email: accountProfile.email || 'jezeeljoxue@gmail.com',
+    name: profileDisplayName,
+    email: profileDisplayEmail,
     phone: accountProfile.phone || '',
     businessName: accountProfile.businessName || '',
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(accountProfile.name || 'Jezeel')}&background=ea580c&color=fff&size=128`,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(profileDisplayName)}&background=ea580c&color=fff&size=128`,
     plan: languageCode === 'en' ? 'PRO Plan' : languageCode === 'pt' ? 'Plano PRO' : 'Plan PRO',
-    expiration: '7 días',
   };
 
   // --- SESIÓN REAL CON FIREBASE AUTH ---
@@ -1709,38 +1755,84 @@ function AnareQApp() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user || null);
       setAuthLoading(false);
-      if (user) {
-        setAccountProfile(prev => {
-          const next = {
-            ...prev,
-            name: user.displayName || prev.name || 'Jezeel',
-            email: user.email || prev.email || ''
-          };
-          try { localStorage.setItem('anareqProfile', JSON.stringify(next)); } catch (error) { /* fallback seguro */ }
-          return next;
-        });
+      if (!user) {
+        setAccountProfile({ name: '', email: '', phone: '', businessName: '' });
+        return;
       }
+
+      const profileStorageKey = `anareqProfile:${user.uid}`;
+      let storedProfile = {};
+      try {
+        const savedProfile = localStorage.getItem(profileStorageKey);
+        if (savedProfile) storedProfile = JSON.parse(savedProfile) || {};
+      } catch (error) {
+        storedProfile = {};
+      }
+
+      const next = {
+        name: storedProfile.name || user.displayName || '',
+        email: user.email || storedProfile.email || '',
+        phone: storedProfile.phone || '',
+        businessName: storedProfile.businessName || ''
+      };
+      try { localStorage.setItem(profileStorageKey, JSON.stringify(next)); } catch (error) { /* fallback seguro */ }
+      setAccountProfile(next);
     });
     return unsubscribe;
   }, []);
 
-  // --- LOCALSTORAGE SEGURO ---
+  // --- HISTORIAL EN LA NUBE: disponible al iniciar sesión desde PC, PWA o móvil ---
   useEffect(() => {
-    try {
-      const savedHistory = localStorage.getItem('anareqHistory');
-      if (savedHistory) {
-        const parsed = JSON.parse(savedHistory);
-        const safeHistory = sanitizeStoredHistory(parsed);
-        setHistory(safeHistory);
-        if (!Array.isArray(parsed) || safeHistory.length !== parsed.length) {
-          localStorage.setItem('anareqHistory', JSON.stringify(safeHistory));
-        }
-      }
-    } catch (e) {
-      console.warn("Storage corruption detected, resetting history", e);
+    if (!currentUser?.uid) {
       setHistory([]);
+      return;
     }
-    
+
+    let isCancelled = false;
+    const loadCloudHistory = async () => {
+      const { history: localBackup, usedLegacyBackup } = readLocalHistoryBackup(currentUser.uid);
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const snapshot = await getDoc(userRef);
+        const cloudHistory = snapshot.exists()
+          ? sanitizeStoredHistory(snapshot.data()?.history)
+          : [];
+
+        // Si Firestore ya tiene datos, manda la nube y se mezcla únicamente con el respaldo
+        // aislado por uid. El respaldo global heredado solo migra cuando la nube aún está vacía.
+        const safeLocalForMerge = cloudHistory.length > 0 && usedLegacyBackup ? [] : localBackup;
+        const mergedHistory = mergeHistoryRecords(cloudHistory, safeLocalForMerge);
+
+        if (isCancelled) return;
+        setHistory(mergedHistory);
+        saveLocalHistoryBackup(currentUser.uid, mergedHistory);
+
+        const shouldPersistMigration = !snapshot.exists()
+          || safeLocalForMerge.length > 0
+          || cloudHistory.length !== mergedHistory.length;
+
+        if (shouldPersistMigration) {
+          await setDoc(userRef, {
+            history: mergedHistory,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        }
+
+        if (usedLegacyBackup && cloudHistory.length === 0 && mergedHistory.length > 0) {
+          try { localStorage.removeItem('anareqHistory'); } catch (error) { /* respaldo heredado no crítico */ }
+        }
+      } catch (error) {
+        console.error('Could not load Firestore history, using local backup:', error);
+        if (!isCancelled) setHistory(localBackup);
+      }
+    };
+
+    loadCloudHistory();
+    return () => { isCancelled = true; };
+  }, [currentUser?.uid]);
+
+  // --- LOCALSTORAGE SEGURO: solo preferencias visuales ---
+  useEffect(() => {
     try {
       const savedCurrency = localStorage.getItem('anareqCurrency');
       if (savedCurrency && CURRENCY_OPTIONS.some(item => item.code === savedCurrency)) setCurrencyCode(savedCurrency);
@@ -1748,15 +1840,52 @@ function AnareQApp() {
       if (savedLanguage && LANGUAGE_OPTIONS.some(item => item.code === savedLanguage)) setLanguageCode(savedLanguage);
       const savedTheme = localStorage.getItem('anareqTheme');
       if (savedTheme === 'dark') setIsDarkMode(true);
-      const savedProfile = localStorage.getItem('anareqProfile');
-      if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile);
-        setAccountProfile(prev => ({ ...prev, ...parsedProfile }));
-      }
     } catch (e) {
       // Ignorar fallback seguro
     }
   }, []);
+
+  // --- PWA: manifiesto, service worker e instalación desde navegador ---
+  useEffect(() => {
+    let manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = '/manifest.webmanifest';
+      document.head.appendChild(manifestLink);
+    }
+
+    let themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (!themeMeta) {
+      themeMeta = document.createElement('meta');
+      themeMeta.name = 'theme-color';
+      document.head.appendChild(themeMeta);
+    }
+    themeMeta.content = isDarkMode ? '#0c0a09' : '#ffffff';
+
+    const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    setIsStandaloneApp(Boolean(standalone));
+
+    const onBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setDeferredInstallPrompt(event);
+    };
+    const onAppInstalled = () => {
+      setDeferredInstallPrompt(null);
+      setIsStandaloneApp(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+    window.addEventListener('appinstalled', onAppInstalled);
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((error) => console.warn('PWA service worker registration failed:', error));
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', onAppInstalled);
+    };
+  }, [isDarkMode]);
 
   // Mantiene el fondo del documento sincronizado con el modo oscuro para evitar espacios blancos fuera del contenedor React.
   useEffect(() => {
@@ -1823,6 +1952,7 @@ function AnareQApp() {
 
   const handleGoogleLogin = async () => {
     setAuthError('');
+    setAuthNotice('');
     setIsAuthSubmitting(true);
     try {
       await signInWithPopup(auth, googleProvider);
@@ -1837,6 +1967,7 @@ function AnareQApp() {
   const handleEmailAuth = async (event) => {
     event.preventDefault();
     setAuthError('');
+    setAuthNotice('');
     if (!authEmail.trim() || !authPassword) {
       setAuthError(t('authRequired'));
       return;
@@ -1854,17 +1985,39 @@ function AnareQApp() {
   };
 
   const handlePasswordReset = async () => {
+    const normalizedEmail = authEmail.trim();
     setAuthError('');
-    if (!authEmail.trim()) {
+    setAuthNotice('');
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setAuthError(t('authInvalidEmail'));
       return;
     }
+    setIsAuthSubmitting(true);
     try {
-      await sendPasswordResetEmail(auth, authEmail.trim());
-      showToastMessage(t('resetSent'), authEmail.trim());
+      await sendPasswordResetEmail(auth, normalizedEmail);
+      setAuthNotice(t('authNoticeReset'));
     } catch (error) {
       console.error('Password reset failed:', error);
       setAuthError(getAuthErrorMessage(error));
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const handleInstallApp = async () => {
+    if (isStandaloneApp) {
+      showToastMessage(t('appInstalled'), t('installAppDesc'));
+      return;
+    }
+    if (!deferredInstallPrompt) {
+      showToastMessage(t('installApp'), t('installUnavailable'));
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    try {
+      await deferredInstallPrompt.userChoice;
+    } finally {
+      setDeferredInstallPrompt(null);
     }
   };
 
@@ -1911,7 +2064,7 @@ function AnareQApp() {
   const handleProfileChange = (field, value) => {
     setAccountProfile(prev => {
       const next = { ...prev, [field]: value };
-      localStorage.setItem('anareqProfile', JSON.stringify(next));
+      if (currentUser?.uid) localStorage.setItem(`anareqProfile:${currentUser.uid}`, JSON.stringify(next));
       return next;
     });
   };
@@ -1943,7 +2096,7 @@ function AnareQApp() {
   const removeExpense = (id) => setExpenses(expenses.filter(exp => exp.id !== id));
 
   const resetForm = () => {
-    setFormData({ startDate: '', endDate: '', budget: '', generalNotes: '' });
+    setFormData({ campaignName: '', startDate: '', endDate: '', budget: '', generalNotes: '' });
     setAdSets([{ id: generateId(), name: '', ads: [{ id: generateId(), spend: '', leads: '', sales: '', revenue: '' }] }]);
     setExpenses([{ id: generateId(), name: '', amount: '' }]);
     setResults(null); 
@@ -2125,10 +2278,10 @@ function AnareQApp() {
   };
 
   const handleSaveAudit = () => {
-    if (!results) return;
+    if (!results || !currentUser?.uid) return;
     setSaveStatus('guardando');
-    
-    setTimeout(() => {
+
+    setTimeout(async () => {
       // RIESGO 1 VERIFICADO
       const newRecord = {
         id: generateId(),
@@ -2145,14 +2298,35 @@ function AnareQApp() {
         results: { ...results },
         date: new Date().toISOString()
       };
-      
-      // RIESGO 1 VERIFICADO
-      const newHistory = [newRecord, ...usableHistory];
-      setHistory(newHistory);
-      localStorage.setItem('anareqHistory', JSON.stringify(newHistory));
-      
-      setSaveStatus('guardado');
-      showToastMessage(t('auditSaved'), `${clientName || t('project')}: ${t('auditSavedDesc')}`);
+
+      // Firestore es la fuente principal. El merge evita pisar auditorías creadas
+      // desde otro dispositivo mientras esta sesión permanecía abierta.
+      const userRef = doc(db, 'users', currentUser.uid);
+      let newHistory = mergeHistoryRecords([newRecord], usableHistory);
+      try {
+        const snapshot = await getDoc(userRef);
+        const cloudHistory = snapshot.exists()
+          ? sanitizeStoredHistory(snapshot.data()?.history)
+          : [];
+        newHistory = mergeHistoryRecords([newRecord], cloudHistory, usableHistory);
+
+        await setDoc(userRef, {
+          history: newHistory,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        setHistory(newHistory);
+        saveLocalHistoryBackup(currentUser.uid, newHistory);
+        setSaveStatus('guardado');
+        showToastMessage(t('auditSaved'), `${clientName || t('project')}: ${t('auditSavedDesc')}`);
+      } catch (error) {
+        console.error('Could not sync audit with Firestore:', error);
+        // Respaldo local por uid: el reporte no se pierde aunque la conexión falle.
+        setHistory(newHistory);
+        saveLocalHistoryBackup(currentUser.uid, newHistory);
+        setSaveStatus('guardado');
+        showToastMessage(t('cloudSyncFailed'), t('cloudSyncFailedDesc'));
+      }
     }, 600);
   };
 
@@ -2278,7 +2452,15 @@ function AnareQApp() {
     pdf.text(new Date().toLocaleDateString(locale), 102, y + 7);
     const period = `${formData.startDate || t('pdfStart')} - ${formData.endDate || t('pdfEnd')}`;
     pdf.text(truncate(period, 34), 141, y + 7);
-    y += 15;
+    if (formData.campaignName) {
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(6.6); setText(colors.muted);
+      pdf.text(safePdfText(t('campaignName')).toUpperCase(), M, y + 13);
+      pdf.setFontSize(8.4); setText(colors.ink);
+      pdf.text(truncate(formData.campaignName, 72), M, y + 18);
+      y += 21;
+    } else {
+      y += 15;
+    }
 
     box(M, y, CONTENT_W, 29, colors.orangeSoft, [253, 186, 116], 4);
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7); setText(colors.orange);
@@ -2342,7 +2524,7 @@ function AnareQApp() {
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(11); setText(colors.ink);
     pdf.text(languageCode === 'en' ? 'Details and action plan' : languageCode === 'pt' ? 'Detalhes e plano de ação' : 'Detalles y plan de acción', M, y);
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.8); setText(colors.muted);
-    pdf.text(`${safePdfText(clientName || t('unnamedProject'))} | ${safePdfText(currencyCode)}`, M, y + 5);
+    pdf.text(`${safePdfText(clientName || t('unnamedProject'))}${formData.campaignName ? ` | ${safePdfText(formData.campaignName)}` : ''} | ${safePdfText(currencyCode)}`, M, y + 5);
     y += 12;
 
     if (results.hasOpCosts) {
@@ -2531,7 +2713,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
     if (recordsToExport.length === 0) return;
 
     const headers = [
-      'Fecha', 'Cliente', 'Moneda', 'Periodo inicio', 'Periodo fin', 'Presupuesto referencial Meta',
+      'Fecha', 'Cliente', 'Campaña', 'Moneda', 'Periodo inicio', 'Periodo fin', 'Presupuesto referencial Meta',
       'Inversion Ads', 'Leads', 'Ventas', 'Facturacion', 'MER', 'CPA', 'CPL',
       'Conversion %', 'Ganancia Ads', 'ROI %', 'Costos operativos', 'Ganancia neta real',
       'Margen neto real %', 'Score global', 'Estado', 'Confiabilidad datos Meta'
@@ -2543,6 +2725,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
       return [
         new Date(item.date).toLocaleDateString(locale),
         item.clientName || 'Sin Nombre',
+        savedForm.campaignName || '',
         item.currencyCode || currencyCode,
         savedForm.startDate || '',
         savedForm.endDate || '',
@@ -2631,7 +2814,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
 
   if (!currentUser) {
     return (
-      <div className={`min-h-screen flex items-center justify-center p-4 sm:p-6 ${isDarkMode ? 'anareq-dark bg-stone-950 text-stone-100' : 'bg-[#f4f2f0] text-stone-900'}`}>
+      <div className={`min-h-[100dvh] flex items-center justify-center p-3 sm:p-6 ${isDarkMode ? 'anareq-dark bg-stone-950 text-stone-100' : 'bg-[#f4f2f0] text-stone-900'}`}>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
           <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-stone-900/10 blur-3xl" />
@@ -2645,25 +2828,14 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
             />
           </section>
 
-          <section className="p-6 sm:p-10 lg:p-12 bg-white">
-            <div className="lg:hidden mb-7 overflow-hidden rounded-2xl border border-stone-200 shadow-sm">
-              <img src="/imagen-logeo.png" alt="anareQ · Analiza antes de escalar" className="h-48 w-full object-cover object-center" />
+          <section className="p-5 sm:p-8 lg:p-12 bg-white">
+            <div className="lg:hidden mb-5 overflow-hidden rounded-2xl border border-stone-200 shadow-sm">
+              <img src="/imagen-logeo.png" alt="anareQ · Analiza antes de escalar" className="h-32 sm:h-44 w-full object-cover object-center" />
             </div>
             <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-600">anareQ</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-900">{t('authWelcome')}</h1>
+            <h1 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-stone-900">{t('authWelcome')}</h1>
 
-            <button type="button" onClick={handleGoogleLogin} disabled={isAuthSubmitting} className="mt-8 w-full flex items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-sm font-black text-stone-800 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 disabled:opacity-60">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.19-2.05H12v3.87h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.31 2.98-7.35Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.23-2.51c-.9.6-2.04.96-3.39.96-2.6 0-4.8-1.76-5.59-4.12H3.08v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.41 13.91A6.02 6.02 0 0 1 6.1 12c0-.66.11-1.31.31-1.91V7.5H3.08A10 10 0 0 0 2 12c0 1.61.39 3.13 1.08 4.5l3.33-2.59Z"/><path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.5l2.87-2.88C16.96 2.97 14.7 2 12 2a10 10 0 0 0-8.92 5.5l3.33 2.59C7.2 7.73 9.4 5.97 12 5.97Z"/></svg>
-              {t('continueGoogle')}
-            </button>
-
-            <div className="my-6 flex items-center gap-3">
-              <span className="h-px flex-1 bg-stone-200" />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-stone-400">{t('orEmail')}</span>
-              <span className="h-px flex-1 bg-stone-200" />
-            </div>
-
-            <form onSubmit={handleEmailAuth} className="space-y-4">
+            <form onSubmit={handleEmailAuth} className="mt-7 space-y-4">
               <label className="block">
                 <span className="text-[11px] font-black uppercase tracking-wider text-stone-500">{t('email')}</span>
                 <input type="email" autoComplete="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="tu@email.com" className="mt-1.5 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3.5 text-sm font-bold text-stone-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
@@ -2674,6 +2846,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
               </label>
 
               {authError && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold leading-relaxed text-red-700">{authError}</div>}
+              {authNotice && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-xs font-bold leading-relaxed text-green-700">{authNotice}</div>}
 
               <button type="submit" disabled={isAuthSubmitting} className="w-full rounded-xl bg-orange-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 disabled:cursor-wait disabled:opacity-60">
                 {authMode === 'signup' ? t('createAccount') : t('signIn')}
@@ -2681,11 +2854,22 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
             </form>
 
             <div className="mt-4 flex flex-col gap-3 text-center">
-              {authMode === 'signin' && <button type="button" onClick={handlePasswordReset} className="text-xs font-bold text-stone-500 hover:text-orange-600">{t('forgotPassword')}</button>}
-              <button type="button" onClick={() => { setAuthMode(prev => prev === 'signin' ? 'signup' : 'signin'); setAuthError(''); }} className="text-xs font-black text-orange-600 hover:text-orange-700">
+              {authMode === 'signin' && <button type="button" onClick={handlePasswordReset} disabled={isAuthSubmitting} className="text-xs font-bold text-stone-500 hover:text-orange-600 disabled:opacity-50">{t('forgotPassword')}</button>}
+              <button type="button" onClick={() => { setAuthMode(prev => prev === 'signin' ? 'signup' : 'signin'); setAuthError(''); setAuthNotice(''); }} className="text-xs font-black text-orange-600 hover:text-orange-700">
                 {authMode === 'signin' ? `${t('noAccount')} ${t('createAccount')}` : `${t('alreadyAccount')} ${t('signIn')}`}
               </button>
             </div>
+
+            <div className="my-6 flex items-center gap-3">
+              <span className="h-px flex-1 bg-stone-200" />
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-stone-400">{t('orEmail')}</span>
+              <span className="h-px flex-1 bg-stone-200" />
+            </div>
+
+            <button type="button" onClick={handleGoogleLogin} disabled={isAuthSubmitting} className="w-full flex items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-sm font-black text-stone-800 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 disabled:opacity-60">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.19-2.05H12v3.87h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.31 2.98-7.35Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.23-2.51c-.9.6-2.04.96-3.39.96-2.6 0-4.8-1.76-5.59-4.12H3.08v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.41 13.91A6.02 6.02 0 0 1 6.1 12c0-.66.11-1.31.31-1.91V7.5H3.08A10 10 0 0 0 2 12c0 1.61.39 3.13 1.08 4.5l3.33-2.59Z"/><path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.5l2.87-2.88C16.96 2.97 14.7 2 12 2a10 10 0 0 0-8.92 5.5l3.33 2.59C7.2 7.73 9.4 5.97 12 5.97Z"/></svg>
+              {t('continueGoogle')}
+            </button>
           </section>
         </div>
       </div>
@@ -2704,18 +2888,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
             <button type="button" onClick={() => setActiveTab('new')} className="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50" aria-label="anareQ home">
               <AnareQLogo className={`w-[118px] sm:w-[145px] h-auto ${isDarkMode ? 'brightness-0 invert' : ''}`} />
             </button>
-            
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
-              <button onClick={() => { setActiveTab('new'); resetForm(); }} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'new' ? 'bg-orange-50 shadow-sm text-orange-700 border border-orange-100' : 'text-stone-500 hover:bg-stone-100'}`}>
-                <PlusCircle className="w-4 h-4" /> {t('navNew')}
-              </button>
-              <button onClick={() => setActiveTab('history')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'history' ? 'bg-orange-50 shadow-sm text-orange-700 border border-orange-100' : 'text-stone-500 hover:bg-stone-100'}`}>
-                <History className="w-4 h-4" /> {t('navHistory')}
-              </button>
-              <button onClick={() => setActiveTab('glossary')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'glossary' ? 'bg-orange-50 shadow-sm text-orange-700 border border-orange-100' : 'text-stone-500 hover:bg-stone-100'}`}>
-                <BookOpen className="w-4 h-4" /> {t('navGlossary')}
-              </button>
-            </div>
+            <div className="flex-1" />
 
             <div className="relative" ref={userMenuRef}>
               <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center gap-2 p-1 pl-2 pr-1.5 rounded-full hover:bg-stone-100 border border-transparent hover:border-stone-200 transition-all focus:outline-none">
@@ -2770,6 +2943,13 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
                       </button>
                     </div>
+                    <button type="button" onClick={handleInstallApp} className="w-full flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-3 text-left hover:border-orange-300 hover:bg-orange-50 transition-colors">
+                      <Download className="w-4 h-4 text-orange-500" />
+                      <div>
+                        <p className="text-xs font-black text-stone-800">{isStandaloneApp ? t('appInstalled') : t('installApp')}</p>
+                        <p className="text-[10px] font-medium leading-relaxed text-stone-500">{t('installAppDesc')}</p>
+                      </div>
+                    </button>
                   </div>
                   <div className="p-2 border-t border-stone-100">
                     <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"><LogOut className="w-4 h-4" /> {t('logout')}</button>
@@ -2781,7 +2961,32 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative z-10 min-h-[calc(100vh-4rem)] print:py-0 print:px-0">
+      <aside className="hidden lg:flex fixed left-0 top-16 bottom-0 z-40 w-64 flex-col border-r border-stone-200 bg-white px-4 py-5 no-print">
+        <div className="px-2 pb-4 border-b border-stone-100">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">anareQ</p>
+          <p className="mt-1 text-sm font-black text-stone-900">{t('businessIntel')}</p>
+        </div>
+        <div className="mt-5 space-y-2">
+          <button onClick={() => { setActiveTab('new'); resetForm(); }} className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-black transition ${activeTab === 'new' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'text-stone-600 hover:bg-stone-100'}`}><PlusCircle className="w-4 h-4" /> {t('navNew')}</button>
+          <button onClick={() => setActiveTab('history')} className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-black transition ${activeTab === 'history' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'text-stone-600 hover:bg-stone-100'}`}><History className="w-4 h-4" /> {t('navHistory')}</button>
+          <button onClick={() => setActiveTab('glossary')} className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-black transition ${activeTab === 'glossary' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'text-stone-600 hover:bg-stone-100'}`}><BookOpen className="w-4 h-4" /> {t('navGlossary')}</button>
+        </div>
+        <div className="mt-auto rounded-2xl border border-orange-100 bg-orange-50 p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">{t('plan')}</p>
+          <p className="mt-1 text-sm font-black text-stone-900">{userData.plan}</p>
+          <p className="mt-1 text-[11px] font-bold text-stone-500">{userData.email}</p>
+        </div>
+      </aside>
+
+      <nav className={`lg:hidden fixed bottom-0 inset-x-0 z-50 border-t backdrop-blur px-2 py-2 no-print ${isDarkMode ? 'border-stone-700 bg-stone-900/95' : 'border-stone-200 bg-white/95'}`}>
+        <div className="grid grid-cols-3 gap-1">
+          <button onClick={() => { setActiveTab('new'); resetForm(); }} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'new' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><PlusCircle className="w-4 h-4" />{t('navNew')}</button>
+          <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'history' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><History className="w-4 h-4" />{t('navHistory')}</button>
+          <button onClick={() => setActiveTab('glossary')} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'glossary' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><BookOpen className="w-4 h-4" />{t('navGlossary')}</button>
+        </div>
+      </nav>
+
+      <main className="lg:ml-64 px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 lg:pb-8 relative z-10 min-h-[calc(100vh-4rem)] print:py-0 print:px-0 print:ml-0">
         
         <datalist id="clients-list">
           {uniqueClients.map(c => <option key={c} value={c} />)}
@@ -2833,6 +3038,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
                       <div>
                         <label className="block text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-1.5 ml-1">{t('clientProject')}</label>
                         <input type="text" list="clients-list" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder={t('clientPlaceholder')} className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500/50 outline-none transition-all font-bold text-stone-900 text-sm" />
+                        <label className="block mt-3"><span className="block text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-1.5 ml-1">{t('campaignName')}</span><input type="text" name="campaignName" value={formData.campaignName || ''} onChange={handleInputChange} placeholder={t('campaignPlaceholder')} className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500/50 outline-none transition-all font-bold text-stone-900 text-sm" /></label>
                       </div>
                       <div className="bg-stone-50 p-1.5 rounded-xl border border-stone-200">
                         <select value={comparisonId} onChange={(e) => setComparisonId(e.target.value)} disabled={history.length === 0} className="w-full px-3 py-2 text-xs font-bold text-stone-600 bg-transparent border-none focus:ring-0 cursor-pointer outline-none disabled:opacity-50">
@@ -3207,7 +3413,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
                       <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 print:border-stone-300 h-full flex flex-col">
                         <div className="flex justify-between items-end mb-4 border-b border-stone-100 pb-3">
                            <h3 className="text-sm font-bold text-stone-900 uppercase tracking-widest flex items-center gap-2">
-                             <LayoutTemplate className="w-4 h-4 text-orange-500"/> Análisis Avanzado de Pauta
+                             <LayoutTemplate className="w-4 h-4 text-orange-500"/> {t('advancedPacingAnalysis')}
                            </h3>
                            <div className="text-right">
                              <p className="text-[10px] font-bold text-stone-400 uppercase">{t('budgetMetaReference')}</p>
@@ -3646,6 +3852,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
                         <tr key={item.id} className="border-b border-stone-100 hover:bg-stone-50 transition-colors group">
                           <td className="py-4 px-4">
                             <div className="font-black text-stone-900">{item.clientName}</div>
+                            {item.formData?.campaignName && <div className="text-[11px] font-bold text-orange-600 mt-0.5">{item.formData.campaignName}</div>}
                             <div className="text-[10px] text-stone-400 font-bold mt-0.5 uppercase flex items-center gap-1">
                               {new Date(item.date).toLocaleDateString(locale)} 
                               {item.results.hasOpCosts && <Briefcase className="w-3 h-3 text-orange-500" title={t('includesBusinessAnalysis')}/>}

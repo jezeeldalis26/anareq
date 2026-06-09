@@ -17,6 +17,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, 
   AreaChart, Area, PieChart, Pie
 } from 'recharts';
+import { LANGUAGE_LOCALES } from './constants/languages';
 
 
 // --- UTILIDADES DE SEGURIDAD MATEMÁTICA Y PARSEO ---
@@ -40,8 +41,6 @@ const LANGUAGE_OPTIONS = [
   { code: 'pt', label: 'Português' },
   { code: 'en', label: 'English' }
 ];
-
-const LANGUAGE_LOCALES = { es: 'es-ES', pt: 'pt-BR', en: 'en-US' };
 
 const UI_TRANSLATIONS = {
   es: {

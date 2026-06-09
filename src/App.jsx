@@ -17,7 +17,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, 
   AreaChart, Area, PieChart, Pie
 } from 'recharts';
-import { LANGUAGE_LOCALES } from './constants/languages';
+import { LANGUAGE_LOCALES, LANGUAGE_OPTIONS } from './constants/languages';
 
 
 // --- UTILIDADES DE SEGURIDAD MATEMÁTICA Y PARSEO ---
@@ -34,12 +34,6 @@ const CURRENCY_OPTIONS = [
   { code: 'ARS', symbol: 'AR$', label: 'Peso argentino (ARS)' },
   { code: 'CLP', symbol: 'CLP$', label: 'Peso chileno (CLP)' },
   { code: 'PEN', symbol: 'S/', label: 'Sol peruano (PEN)' }
-];
-
-const LANGUAGE_OPTIONS = [
-  { code: 'es', label: 'Español' },
-  { code: 'pt', label: 'Português' },
-  { code: 'en', label: 'English' }
 ];
 
 const UI_TRANSLATIONS = {

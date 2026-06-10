@@ -8,3 +8,11 @@ export const CURRENCY_OPTIONS = [
   { code: 'CLP', symbol: 'CLP$', label: 'Peso chileno (CLP)' },
   { code: 'PEN', symbol: 'S/', label: 'Sol peruano (PEN)' }
 ];
+
+export const LANGUAGE_OPTIONS = [
+  { code: 'es', label: 'Español' },
+  { code: 'pt', label: 'Português' },
+  { code: 'en', label: 'English' }
+];
+
+export const LANGUAGE_LOCALES = { es: 'es-ES', pt: 'pt-BR', en: 'en-US' };

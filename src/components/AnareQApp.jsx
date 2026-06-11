@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { auth, googleProvider, db, doc, getDoc, setDoc, onAuthStateChanged } from '../services/firebaseService';
 import { signInWithGoogle, signInWithEmail, createAccountWithEmail, resetPassword, signOut } from '../services/firebaseService';
-import { BarChart2, PlusCircle, History, ShieldCheck, Printer, Save, CheckCircle, TrendingUp, TrendingDown, AlertCircle, Calendar, Target, Users, AlertTriangle, PieChart as PieIcon, Activity, Info, Copy, Download, Building, Calculator, ToggleLeft, ToggleRight, Briefcase, User, Star, LogOut, ChevronDown, BarChart as ChartIcon, Crosshair, Scale, Trash2, Share2, FileText, ArrowLeft, HelpCircle, MessageSquare, LayoutTemplate, Megaphone, Plus, BookOpen, Search, Moon, Sun, Eye, Upload, FileSpreadsheet, XCircle, RefreshCw, Check, Info as InfoIcon } from 'lucide-react';
+import { BarChart2, PlusCircle, History, ShieldCheck, Printer, Save, CheckCircle, TrendingUp, TrendingDown, AlertCircle, Calendar, Target, Users, AlertTriangle, PieChart as PieIcon, Activity, Info, Copy, Download, Building, ToggleLeft, ToggleRight, Briefcase, User, Star, LogOut, ChevronDown, BarChart as ChartIcon, Crosshair, Scale, Trash2, Share2, FileText, ArrowLeft, HelpCircle, MessageSquare, LayoutTemplate, Megaphone, Plus, BookOpen, Search, Moon, Sun, Eye, Upload, FileSpreadsheet, XCircle, RefreshCw, Check, Info as InfoIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, AreaChart, Area, PieChart, Pie } from 'recharts';
 import { CURRENCY_OPTIONS, LANGUAGE_OPTIONS, LANGUAGE_LOCALES } from '../constants/currencies';
 import { CATEGORY_TRANSLATIONS, getMeasurementQuestions, translateUI, translateStatus, getMeasurementConfidenceMessage, fillNarrative } from '../constants/translations';
@@ -2028,9 +2028,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
                               Estimación operativa. No incluye impuestos, depreciación ni amortizaciones.
                            </p>
                          </div>
-                         <div className="absolute -right-20 -bottom-20 opacity-5 pointer-events-none overflow-hidden rounded-br-3xl print:hidden">
-                            <Calculator className="w-80 h-80" />
-                         </div>
+                         
                       </div>
                     )}
 
@@ -2661,12 +2659,60 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
         .anareq-dark .border-green-200 { border-color: rgba(34, 197, 94, 0.45) !important; }
         .anareq-dark .border-red-200 { border-color: rgba(248, 113, 113, 0.45) !important; }
         .anareq-dark .border-amber-200 { border-color: rgba(251, 191, 36, 0.45) !important; }
+        .anareq-dark .bg-green-50,
+.anareq-dark .bg-green-100 {
+  background-color: rgba(34, 197, 94, 0.16) !important;
+}
+
+.anareq-dark .bg-red-50,
+.anareq-dark .bg-red-100 {
+  background-color: rgba(248, 113, 113, 0.16) !important;
+}
         .anareq-dark .professional-pdf-stage, .anareq-dark .professional-pdf-stage * { color-scheme: light; }
         .anareq-dark .professional-pdf-stage .bg-white { background-color: #ffffff !important; }
         .anareq-dark .professional-pdf-stage .bg-stone-50 { background-color: #fafaf9 !important; }
         .anareq-dark .professional-pdf-stage .text-stone-900 { color: #1c1917 !important; }
         .anareq-dark .professional-pdf-stage .text-stone-800 { color: #292524 !important; }
         .anareq-dark .professional-pdf-stage .text-stone-700 { color: #44403c !important; }
+                .anareq-dark [class~="bg-[#f4f2f0]"] { background-color: #0c0a09 !important; }
+        .anareq-dark [class~="bg-stone-50/50"] { background-color: rgba(41, 37, 36, 0.78) !important; }
+        .anareq-dark [class~="bg-orange-50/60"] { background-color: rgba(124, 45, 18, 0.34) !important; }
+        .anareq-dark .bg-stone-200 { background-color: #57534e !important; }
+        .anareq-dark .bg-orange-100 { background-color: rgba(124, 45, 18, 0.42) !important; }
+        .anareq-dark .text-stone-400, .anareq-dark .text-stone-300 { color: #d6d3d1 !important; }
+        .anareq-dark .text-orange-700, .anareq-dark .text-orange-800 { color: #fdba74 !important; }
+        .anareq-dark .bg-amber-50,
+.anareq-dark .bg-amber-100,
+.anareq-dark .bg-yellow-50,
+.anareq-dark .bg-yellow-100 {
+  background-color: rgba(251, 191, 36, 0.16) !important;
+}
+.anareq-dark .bg-orange-50,
+.anareq-dark .bg-orange-100 {
+  background-color: rgba(249, 115, 22, 0.18) !important;
+}
+.anareq-dark .border-yellow-200 {
+  border-color: rgba(251, 191, 36, 0.45) !important;
+}
+.anareq-dark .border-orange-200 {
+  border-color: rgba(249, 115, 22, 0.45) !important;
+}
+  .anareq-dark [class*="hover:bg-white"]:hover,
+.anareq-dark [class*="hover:bg-stone-50"]:hover,
+.anareq-dark [class*="hover:bg-stone-100"]:hover,
+.anareq-dark [class*="hover:bg-gray-50"]:hover,
+.anareq-dark [class*="hover:bg-gray-100"]:hover {
+  background-color: rgba(41, 37, 36, 0.92) !important;
+}
+
+.anareq-dark [class*="hover:bg-orange-50"]:hover,
+.anareq-dark [class*="hover:bg-orange-100"]:hover {
+  background-color: rgba(124, 45, 18, 0.42) !important;
+}
+.anareq-dark [class*="hover:bg-amber-50"]:hover,
+.anareq-dark [class*="hover:bg-yellow-50"]:hover {
+  background-color: rgba(120, 53, 15, 0.34) !important;
+}
         .anareq-dark .professional-pdf-stage .text-stone-600 { color: #57534e !important; }
         .anareq-dark .professional-pdf-stage .text-stone-500 { color: #78716c !important; }
         .anareq-dark .professional-pdf-stage .text-stone-400 { color: #a8a29e !important; }

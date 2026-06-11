@@ -31,6 +31,7 @@ function AnareQApp() {
   const [isStandaloneApp, setIsStandaloneApp] = useState(false);
   const [showScoreExplanation, setShowScoreExplanation] = useState(false);
   const historyReadSnapshotRef = useRef(null);
+  const [lastHistoryReadAudit, setLastHistoryReadAudit] = useState(null);
   const [metaImport, setMetaImport] = useState({ ...EMPTY_META_IMPORT });
   const [isImportingMeta, setIsImportingMeta] = useState(false);
   const [auditSource, setAuditSource] = useState('manual');
@@ -2318,7 +2319,28 @@ const restoreActiveAuditAfterHistoryRead = () => {
                 </button>
               </div>
             )}
-
+{lastHistoryReadAudit && (
+  <div className="mb-6">
+    <button
+      type="button"
+      onClick={() => {
+        saveActiveAuditBeforeHistoryRead();
+        loadAuditFromHistory(lastHistoryReadAudit);
+        setActiveTab('view-report');
+      }}
+      className="flex items-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl shadow-sm transition-colors"
+    >
+      <Eye className="w-4 h-4" />
+      {languageCode === 'pt'
+        ? 'Retomar último relatório consultado'
+        : languageCode === 'en'
+          ? 'Resume last viewed report'
+          : 'Retomar último reporte consultado'}
+      {' '}
+      ({lastHistoryReadAudit.clientName || 'Sin nombre'})
+    </button>
+  </div>
+)}
             <div className="bg-white rounded-3xl shadow-sm border border-stone-200 overflow-hidden">
               <div className="p-5 sm:p-8 border-b border-stone-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-stone-50/50">
                 <div>
@@ -2429,6 +2451,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
                                <button 
                                  onClick={() => {
   saveActiveAuditBeforeHistoryRead();
+  setLastHistoryReadAudit(item);
   loadAuditFromHistory(item);
   setActiveTab('view-report');
 }}

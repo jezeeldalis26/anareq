@@ -30,6 +30,7 @@ function AnareQApp() {
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
   const [isStandaloneApp, setIsStandaloneApp] = useState(false);
   const [showScoreExplanation, setShowScoreExplanation] = useState(false);
+  const historyReadSnapshotRef = useRef(null);
   const [metaImport, setMetaImport] = useState({ ...EMPTY_META_IMPORT });
   const [isImportingMeta, setIsImportingMeta] = useState(false);
   const [auditSource, setAuditSource] = useState('manual');
@@ -1099,7 +1100,41 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
     navigator.clipboard.writeText(generateShareText(results, clientName));
     setCopiedText(true); setTimeout(() => setCopiedText(false), 2000);
   };
+const saveActiveAuditBeforeHistoryRead = () => {
+  if (historyReadSnapshotRef.current) return;
 
+  historyReadSnapshotRef.current = {
+    formData,
+    expenses,
+    adSets,
+    clientName,
+    currencyCode,
+    results,
+    auditSource,
+    includeOpCosts,
+    measurementAnswers,
+    showMeasurementModule,
+  };
+};
+
+const restoreActiveAuditAfterHistoryRead = () => {
+  const snapshot = historyReadSnapshotRef.current;
+  if (!snapshot) return;
+
+  setFormData(snapshot.formData);
+  setExpenses(snapshot.expenses);
+  setAdSets(snapshot.adSets);
+  setClientName(snapshot.clientName);
+  setCurrencyCode(snapshot.currencyCode);
+  localStorage.setItem('anareqCurrency', snapshot.currencyCode);
+  setResults(snapshot.results);
+  setAuditSource(snapshot.auditSource);
+  setIncludeOpCosts(snapshot.includeOpCosts);
+  setMeasurementAnswers(snapshot.measurementAnswers);
+  setShowMeasurementModule(snapshot.showMeasurementModule);
+
+  historyReadSnapshotRef.current = null;
+};
   const loadAuditFromHistory = (item) => {
     setFormData(item.formData);
     setExpenses(item.formData.expenses || [{ id: generateId(), name: t('opExpenses'), amount: item.results.operatingCosts || '' }]);
@@ -1123,10 +1158,41 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
   };
 
   const shareFromHistory = (item) => {
-    loadAuditFromHistory(item);
-    // Comparte el archivo PDF directamente sin sacar al usuario del historial.
-    setTimeout(() => handleShareCurrentPDF(item.clientName), 450);
+  const activeAuditSnapshot = {
+    formData,
+    expenses,
+    adSets,
+    clientName,
+    currencyCode,
+    results,
+    auditSource,
+    includeOpCosts,
+    measurementAnswers,
+    showMeasurementModule,
   };
+
+  loadAuditFromHistory(item);
+
+  // Espera a que React cargue temporalmente el reporte histórico.
+  setTimeout(async () => {
+    try {
+      await handleShareCurrentPDF(item.clientName);
+    } finally {
+      // Restaura el diagnóstico activo después de compartir o descargar el PDF.
+      setFormData(activeAuditSnapshot.formData);
+      setExpenses(activeAuditSnapshot.expenses);
+      setAdSets(activeAuditSnapshot.adSets);
+      setClientName(activeAuditSnapshot.clientName);
+      setCurrencyCode(activeAuditSnapshot.currencyCode);
+      localStorage.setItem('anareqCurrency', activeAuditSnapshot.currencyCode);
+      setResults(activeAuditSnapshot.results);
+      setAuditSource(activeAuditSnapshot.auditSource);
+      setIncludeOpCosts(activeAuditSnapshot.includeOpCosts);
+      setMeasurementAnswers(activeAuditSnapshot.measurementAnswers);
+      setShowMeasurementModule(activeAuditSnapshot.showMeasurementModule);
+    }
+  }, 450);
+};
 
   // --- EXPORTACIÓN CSV OPERATIVA ---
   const exportCSV = () => {
@@ -1313,7 +1379,10 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
       <nav className="bg-white border-b border-stone-200 sticky top-0 z-50 shadow-sm relative no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <button type="button" onClick={() => setActiveTab('new')} className="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50" aria-label="anareQ home">
+            <button type="button" onClick={() => {
+  restoreActiveAuditAfterHistoryRead();
+  setActiveTab('new');
+}} className="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50" aria-label="anareQ home">
               <AnareQLogo className={`w-[118px] sm:w-[145px] h-auto ${isDarkMode ? 'brightness-0 invert' : ''}`} />
             </button>
             <div className="flex-1" />
@@ -2241,7 +2310,10 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
             
             {results && (
               <div className="mb-6">
-                <button onClick={() => setActiveTab('view-report')} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl shadow-md transition-all">
+                <button onClick={() => {
+  restoreActiveAuditAfterHistoryRead();
+  setActiveTab('view-report');
+}} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl shadow-md transition-all">
                   <ArrowLeft className="w-4 h-4" /> Volver al Análisis Actual ({clientName || 'Sin nombre'})
                 </button>
               </div>
@@ -2355,7 +2427,11 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
                                  <Share2 className="w-4 h-4" />
                                </button>
                                <button 
-                                 onClick={() => { loadAuditFromHistory(item); setActiveTab('view-report'); }}
+                                 onClick={() => {
+  saveActiveAuditBeforeHistoryRead();
+  loadAuditFromHistory(item);
+  setActiveTab('view-report');
+}}
                                  className="flex items-center gap-2 text-stone-600 hover:text-stone-900 bg-white hover:bg-stone-100 text-xs font-black px-3 py-2 rounded-lg transition-all border border-stone-200 shadow-sm"
                                  title={t('viewReport')}
                                >

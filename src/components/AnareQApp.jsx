@@ -1406,15 +1406,15 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
         </div>
       </aside>
 
-      <nav className={`lg:hidden fixed bottom-0 inset-x-0 z-50 border-t backdrop-blur px-2 py-2 no-print ${isDarkMode ? 'border-stone-700 bg-stone-900/95' : 'border-stone-200 bg-white/95'}`}>
-        <div className="grid grid-cols-3 gap-1">
+      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-[100vw] overflow-hidden box-border z-50 border-t backdrop-blur px-2 py-2 no-print ${isDarkMode ? 'border-stone-700 bg-stone-900/95' : 'border-stone-200 bg-white/95'}`}>
+        <div className="grid w-full min-w-0 grid-cols-3 gap-1">
           <button onClick={() => { setActiveTab('new'); resetForm(); }} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'new' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><PlusCircle className="w-4 h-4" />{t('navNew')}</button>
           <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'history' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><History className="w-4 h-4" />{t('navHistory')}</button>
           <button onClick={() => setActiveTab('glossary')} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'glossary' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><BookOpen className="w-4 h-4" />{t('navGlossary')}</button>
         </div>
       </nav>
 
-      <main className="lg:ml-64 px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 lg:pb-8 relative z-10 min-h-[calc(100vh-4rem)] print:py-0 print:px-0 print:ml-0">
+      <main className="lg:ml-64 min-w-0 max-w-full overflow-x-hidden px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 lg:pb-8 relative z-10 min-h-[calc(100vh-4rem)] print:py-0 print:px-0 print:ml-0">
         
         <datalist id="clients-list">
           {uniqueClients.map(c => <option key={c} value={c} />)}
@@ -2216,7 +2216,7 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
               )}
 
               {results && (
-                <div className="mt-8 mb-12 flex flex-col sm:flex-row justify-center items-center gap-3 px-4 sm:px-0 no-print">
+                <div id="report-action-buttons" className="mt-8 mb-12 flex flex-col sm:flex-row justify-center items-center gap-3 px-4 sm:px-0 no-print">
                   <button onClick={handleSaveAudit} disabled={saveStatus === 'guardando' || saveStatus === 'guardado'} className={`flex-1 max-w-[200px] flex justify-center items-center gap-2 py-4 rounded-2xl text-base font-black transition-all border ${saveStatus === 'guardado' ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-white hover:bg-stone-50 text-stone-700 border-2 border-stone-200 shadow-sm'}`}>
                     {saveStatus === 'guardado' ? <><CheckCircle className="w-5 h-5" /> {t('saved')}</> : <><Save className="w-5 h-5" /> {t('save')}</>}
                   </button>
@@ -2283,7 +2283,34 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
                   </button>
                 </div>
               ) : (
-                <div className="overflow-x-auto p-4">
+                <div id="history-scroll-table" className="overflow-x-auto p-4 scroll-smooth">
+                <div className="flex items-center justify-end gap-2 px-4 pt-4 sm:hidden">
+  <button
+    type="button"
+    onClick={() =>
+      document
+        .getElementById('history-scroll-table')
+        ?.scrollBy({ left: -280, behavior: 'smooth' })
+    }
+    className="flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-lg font-black text-stone-700 shadow-sm transition active:scale-95"
+    aria-label="Ver columnas anteriores"
+  >
+    ←
+  </button>
+
+  <button
+    type="button"
+    onClick={() =>
+      document
+        .getElementById('history-scroll-table')
+        ?.scrollBy({ left: 280, behavior: 'smooth' })
+    }
+    className="flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-lg font-black text-stone-700 shadow-sm transition active:scale-95"
+    aria-label="Ver columnas siguientes"
+  >
+    →
+  </button>
+</div>
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead>
                       <tr className="border-b-2 border-stone-100 text-[10px] font-black text-stone-400 uppercase tracking-widest bg-white">
@@ -2712,6 +2739,24 @@ ${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${
 .anareq-dark [class*="hover:bg-amber-50"]:hover,
 .anareq-dark [class*="hover:bg-yellow-50"]:hover {
   background-color: rgba(120, 53, 15, 0.34) !important;
+}
+  @media (max-width: 639px) {
+  #report-action-buttons {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    max-width: 360px;
+    gap: 12px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #report-action-buttons > button {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 46px;
+    justify-content: center;
+  }
 }
         .anareq-dark .professional-pdf-stage .text-stone-600 { color: #57534e !important; }
         .anareq-dark .professional-pdf-stage .text-stone-500 { color: #78716c !important; }

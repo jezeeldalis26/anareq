@@ -60,6 +60,8 @@ function AnareQApp() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isPdfTemplateMounted, setIsPdfTemplateMounted] = useState(false);
   const [history, setHistory] = useState([]);
+  const [auditPendingDelete, setAuditPendingDelete] = useState(null);
+const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [comparisonId, setComparisonId] = useState('');
   const [historyClientFilter, setHistoryClientFilter] = useState('');
@@ -740,7 +742,57 @@ function AnareQApp() {
       }
     }, 600);
   };
+const handleDeleteAudit = async (auditId) => {
+  if (!auditId || !currentUser?.uid || isDeletingAudit) return;
 
+setIsDeletingAudit(true);
+
+try {
+    const userRef = doc(db, 'users', currentUser.uid);
+    const snapshot = await getDoc(userRef);
+
+    const cloudHistory = snapshot.exists()
+      ? sanitizeStoredHistory(snapshot.data()?.history)
+      : [];
+
+    const safeAuditId = String(auditId);
+
+    const localWithoutAudit = history.filter(
+      (item) => String(item.id) !== safeAuditId
+    );
+
+    const cloudWithoutAudit = cloudHistory.filter(
+      (item) => String(item.id) !== safeAuditId
+    );
+
+    const newHistory = mergeHistoryRecords(
+      cloudWithoutAudit,
+      localWithoutAudit
+    );
+
+    await setDoc(userRef, {
+      history: newHistory,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    setHistory(newHistory);
+    saveLocalHistoryBackup(currentUser.uid, newHistory);
+setAuditPendingDelete(null);
+    showToastMessage(
+      'Auditoría eliminada',
+      'El registro fue eliminado correctamente.'
+    );
+  } catch (error) {
+  console.error('Could not delete audit from Firestore:', error);
+
+  showToastMessage(
+    'No se pudo eliminar',
+    'Revisa tu conexión e inténtalo nuevamente.'
+  );
+} finally {
+  setIsDeletingAudit(false);
+}
+};
   // --- EXPORTAR / COMPARTIR PDF PROFESIONAL ---
   const buildPdfFileName = (client = clientName) => {
     const safeClient = String(client || 'Diagnostico')
@@ -1374,6 +1426,59 @@ const restoreActiveAuditAfterHistoryRead = () => {
   return (
     <div className={`min-h-screen font-sans selection:bg-orange-200 selection:text-orange-900 relative ${isDarkMode ? 'anareq-dark bg-stone-950 text-stone-100' : 'bg-[#f4f2f0] text-stone-800'}`}>
       <Toast visible={toastConfig.visible} message={toastConfig} onClose={handleCloseToast} />
+      {auditPendingDelete && (
+  <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 px-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-audit-title"
+      className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl"
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+          <AlertTriangle className="h-5 w-5" />
+        </div>
+
+        <div>
+          <h2
+            id="delete-audit-title"
+            className="text-lg font-black text-stone-900"
+          >
+            Eliminar auditoría
+          </h2>
+
+          <p className="mt-2 text-sm font-medium leading-6 text-stone-600">
+            ¿Seguro que quieres eliminar esta auditoría? Esta acción no se
+            puede deshacer.
+          </p>
+
+          <p className="mt-3 text-xs font-bold uppercase tracking-wide text-stone-400">
+            {auditPendingDelete.clientName || 'Auditoría seleccionada'}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setAuditPendingDelete(null)}
+          className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-black text-stone-700 transition-colors hover:bg-stone-50"
+        >
+          Cancelar
+        </button>
+
+        <button
+  type="button"
+  onClick={() => handleDeleteAudit(auditPendingDelete.id)}
+  disabled={isDeletingAudit}
+  className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {isDeletingAudit ? 'Eliminando...' : 'Eliminar'}
+</button>
+      </div>
+    </div>
+  </div>
+)}
       {legalLoaded && !legalAccepted && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/70 p-4 backdrop-blur-sm no-print"><div className="w-full max-w-lg rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl"><div className="flex items-start gap-3"><ShieldCheck className="h-7 w-7 shrink-0 text-orange-600"/><div><h2 className="text-xl font-black text-stone-900">{t('legalTitle')}</h2><p className="mt-2 text-sm font-medium leading-relaxed text-stone-600">{t('legalDesc')}</p></div></div><label className="mt-5 flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4"><input type="checkbox" checked={legalCheckbox} onChange={(e)=>setLegalCheckbox(e.target.checked)} className="mt-1"/><span className="text-xs font-bold leading-relaxed text-stone-700">{t('legalCheckbox')}</span></label><p className="mt-3 text-[10px] font-bold leading-relaxed text-stone-400">{t('legalDraftNotice')}</p><button type="button" onClick={handleAcceptLegal} disabled={!legalCheckbox} className="mt-5 w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-40">{t('legalAccept')}</button></div></div>}
       {showScoreExplanation && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-stone-950/70 p-4 backdrop-blur-sm no-print"><div className="w-full max-w-xl rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-widest text-orange-600">anareQ</p><h2 className="mt-1 text-xl font-black text-stone-900">{t('scoreExplanationTitle')}</h2></div><button type="button" onClick={()=>setShowScoreExplanation(false)} className="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"><XCircle className="h-6 w-6"/></button></div><p className="mt-4 text-sm font-medium leading-relaxed text-stone-600">{t('scoreExplanationBody')}</p><div className="mt-4 grid gap-2 sm:grid-cols-2">{[t('scoreWeightAds'),t('scoreWeightSales'),t('scoreWeightMargin'),t('scoreWeightStability')].map(item=><div key={item} className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs font-black text-stone-700">{item}</div>)}</div><button type="button" onClick={()=>setShowScoreExplanation(false)} className="mt-5 w-full rounded-xl bg-stone-900 px-4 py-3 text-sm font-black text-white hover:bg-black">{t('close')}</button></div></div>}
 
@@ -2460,6 +2565,18 @@ const restoreActiveAuditAfterHistoryRead = () => {
                                >
                                  <Eye className="w-4 h-4" /> {t('viewReport')}
                                </button>
+                               <button
+  type="button"
+  onClick={(event) => {
+  event.stopPropagation();
+  setAuditPendingDelete(item);
+}}
+  className="p-2 bg-white border border-stone-200 rounded-lg text-stone-500 hover:text-red-600 hover:border-red-200 transition-colors"
+  title="Eliminar auditoría"
+  aria-label="Eliminar auditoría"
+>
+  <Trash2 className="w-4 h-4" />
+</button>
                             </div>
                           </td>
                         </tr>

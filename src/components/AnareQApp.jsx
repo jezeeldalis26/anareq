@@ -511,13 +511,62 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
     // RIESGO 1 VERIFICADO
     setAdSets(adSets.map(set => set.id === setId ? { ...set, ads: set.ads.filter(a => a.id !== adId) } : set));
   };
-  const handleAdChange = (setId, adId, field, value) => {
-    // RIESGO 1 VERIFICADO
-    setAdSets(adSets.map(set => set.id === setId ? { ...set, ads: set.ads.map(ad => ad.id === adId ? { ...ad, [field]: value } : ad) } : set));
-  };
+  const sanitizeNumericInput = (value, allowDecimal = false) => {
+  const normalizedValue = String(value ?? '').replace(/,/g, '.');
+
+  if (!allowDecimal) {
+    return normalizedValue.replace(/\D/g, '');
+  }
+
+  const cleanedValue = normalizedValue.replace(/[^\d.]/g, '');
+  const [integerPart, ...decimalParts] = cleanedValue.split('.');
+
+  return decimalParts.length > 0
+    ? `${integerPart}.${decimalParts.join('')}`
+    : integerPart;
+};
+
+const handleAdChange = (setId, adId, field, value) => {
+  // RIESGO 1 VERIFICADO
+  const decimalFields = ['spend', 'revenue'];
+  const integerFields = ['leads', 'sales'];
+
+  const sanitizedValue = decimalFields.includes(field)
+    ? sanitizeNumericInput(value, true)
+    : integerFields.includes(field)
+      ? sanitizeNumericInput(value)
+      : value;
+
+  setAdSets(
+    adSets.map(set =>
+      set.id === setId
+        ? {
+            ...set,
+            ads: set.ads.map(ad =>
+              ad.id === adId
+                ? { ...ad, [field]: sanitizedValue }
+                : ad
+            )
+          }
+        : set
+    )
+  );
+};
 
   // --- HANDLERS: GASTOS ---
-  const handleExpenseChange = (id, field, value) => setExpenses(prev => prev.map(exp => exp.id === id ? { ...exp, [field]: value } : exp));
+  const handleExpenseChange = (id, field, value) => {
+  const sanitizedValue = field === 'amount'
+    ? sanitizeNumericInput(value, true)
+    : value;
+
+  setExpenses(prev =>
+    prev.map(exp =>
+      exp.id === id
+        ? { ...exp, [field]: sanitizedValue }
+        : exp
+    )
+  );
+};
   const addExpense = () => setExpenses([...expenses, { id: generateId(), name: '', amount: '' }]);
   const removeExpense = (id) => setExpenses(expenses.filter(exp => exp.id !== id));
 
@@ -1673,7 +1722,20 @@ const restoreActiveAuditAfterHistoryRead = () => {
                       <div className="relative">
                         <label className="text-[10px] font-bold text-stone-500 mb-1 ml-1 flex items-center">{t('budgetMeta')} <TooltipInfo text={t('budgetHelp')}/></label>
                         <div className="absolute left-3 top-[26px] text-stone-400 text-xs">{currencySymbol}</div>
-                        <input type="number" min="0" step="any" name="budget" value={formData.budget} onChange={handleInputChange} placeholder="0.00" className="w-full pl-7 pr-3 py-2.5 bg-white border border-stone-200 rounded-lg outline-none focus:border-stone-400 font-bold text-stone-700 text-sm" />
+                        <input
+  type="text"
+  inputMode="decimal"
+  name="budget"
+  value={formData.budget}
+  onChange={(e) =>
+    setFormData(prev => ({
+      ...prev,
+      budget: sanitizeNumericInput(e.target.value, true)
+    }))
+  }
+  placeholder="0.00"
+  className="w-full pl-7 pr-3 py-2.5 bg-white border border-stone-200 rounded-lg outline-none focus:border-stone-400 font-bold text-stone-700 text-sm"
+ />
                         <p className="text-[10px] text-stone-400 font-medium mt-1.5 ml-1">{t('budgetReference')}</p>
                       </div>
                     </div>
@@ -1700,12 +1762,118 @@ const restoreActiveAuditAfterHistoryRead = () => {
                                        <button onClick={() => removeAd(adSet.id, ad.id)} className="absolute -left-2 -top-2 bg-stone-200 text-stone-500 hover:text-red-500 p-1 rounded-full opacity-0 group-hover/ad:opacity-100 transition-opacity"><Trash2 className="w-3 h-3"/></button>
                                      )}
                                      <div className="w-full text-[9px] font-bold text-stone-400 mb-1 flex items-center"><PieIcon className="w-3 h-3 mr-1"/> {t('adLabel')} {idx+1}</div>
-                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
-                                       <div><label className="block text-[10px] font-black text-stone-600 uppercase tracking-wide mb-1.5">{t('spend')} {currencySymbol}</label><input type="text" inputMode="decimal" placeholder="0.00" value={ad.spend} onChange={(e) => handleAdChange(adSet.id, ad.id, 'spend', e.target.value)} className="w-full text-sm font-bold text-stone-800 p-2.5 rounded-lg border border-stone-200 focus:border-orange-400 outline-none" title={t('spend')} /></div>
-                                       <div><label className="block text-[10px] font-black text-stone-600 uppercase tracking-wide mb-1.5">{t('messages')} / {t('leads')}</label><input type="text" inputMode="numeric" placeholder="0" value={ad.leads} onChange={(e) => handleAdChange(adSet.id, ad.id, 'leads', e.target.value)} className="w-full text-sm font-bold text-stone-800 p-2.5 rounded-lg border border-stone-200 focus:border-orange-400 outline-none" title={t('messages')} /></div>
-                                       <div><label className="block text-[10px] font-black text-stone-600 uppercase tracking-wide mb-1.5">{t('sales')}</label><input type="text" inputMode="numeric" placeholder="0" value={ad.sales} onChange={(e) => handleAdChange(adSet.id, ad.id, 'sales', e.target.value)} className="w-full text-sm font-bold text-stone-800 p-2.5 rounded-lg border border-stone-200 focus:border-orange-400 outline-none" title={t('sales')} /></div>
-                                       <div><label className="block text-[10px] font-black text-orange-600 uppercase tracking-wide mb-1.5">{t('invoice')} {currencySymbol}</label><input type="text" inputMode="decimal" placeholder="0.00" value={ad.revenue} onChange={(e) => handleAdChange(adSet.id, ad.id, 'revenue', e.target.value)} className="w-full text-sm font-bold text-orange-700 p-2.5 rounded-lg border border-orange-200 focus:border-orange-400 outline-none bg-orange-50/50" title={t('revenue')} /></div>
-                                     </div>
+                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-full">
+  <div className={`rounded-xl border p-3 ${
+  isDarkMode
+    ? 'border-stone-700 bg-stone-900/70'
+    : 'border-stone-200 bg-stone-50/70'
+}`}>
+    <div className="mb-3">
+      <p className="text-[10px] font-black uppercase tracking-wider text-stone-700">
+        {t('metaAdsMetrics')}
+      </p>
+      <p className="mt-0.5 text-[10px] font-medium text-stone-400">
+        {t('metaAdsMetricsDesc')}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div>
+        <label className="block text-[10px] font-black text-stone-600 uppercase tracking-wide mb-1.5">
+          {t('spend')} {currencySymbol}
+        </label>
+        <input
+          type="text"
+          inputMode="decimal"
+          placeholder="0.00"
+          value={ad.spend}
+          onChange={(e) => handleAdChange(adSet.id, ad.id, 'spend', e.target.value)}
+          className={`w-full text-sm font-bold p-2.5 rounded-lg border focus:border-orange-400 outline-none ${
+  isDarkMode
+    ? 'bg-stone-950 border-stone-700 text-stone-100'
+    : 'bg-white border-stone-200 text-stone-800'
+}`}
+          title={t('spend')}
+        />
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-black text-stone-600 uppercase tracking-wide mb-1.5">
+          {t('messages')} / {t('leads')}
+        </label>
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="0"
+          value={ad.leads}
+          onChange={(e) => handleAdChange(adSet.id, ad.id, 'leads', e.target.value)}
+          className={`w-full text-sm font-bold p-2.5 rounded-lg border focus:border-orange-400 outline-none ${
+  isDarkMode
+    ? 'bg-stone-950 border-stone-700 text-stone-100'
+    : 'bg-white border-stone-200 text-stone-800'
+}`}
+          title={t('messages')}
+        />
+      </div>
+    </div>
+  </div>
+
+  <div className={`rounded-xl border p-3 ${
+  isDarkMode
+    ? 'border-orange-900/60 bg-orange-950/20'
+    : 'border-orange-100 bg-orange-50/40'
+}`}>
+    <div className="mb-3">
+      <p className="text-[10px] font-black uppercase tracking-wider text-orange-700">
+        {t('realBusinessData')}
+      </p>
+      <p className="mt-0.5 text-[10px] font-medium text-stone-400">
+        {t('realBusinessDataDesc')}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div>
+        <label className="block text-[10px] font-black text-stone-600 uppercase tracking-wide mb-1.5">
+          {t('sales')}
+        </label>
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="0"
+          value={ad.sales}
+          onChange={(e) => handleAdChange(adSet.id, ad.id, 'sales', e.target.value)}
+          className={`w-full text-sm font-bold p-2.5 rounded-lg border focus:border-orange-400 outline-none ${
+  isDarkMode
+    ? 'bg-stone-950 border-stone-700 text-stone-100'
+    : 'bg-white border-stone-200 text-stone-800'
+}`}
+          title={t('sales')}
+        />
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-black text-orange-600 uppercase tracking-wide mb-1.5">
+          {t('invoice')} {currencySymbol}
+        </label>
+        <input
+          type="text"
+          inputMode="decimal"
+          placeholder="0.00"
+          value={ad.revenue}
+          onChange={(e) => handleAdChange(adSet.id, ad.id, 'revenue', e.target.value)}
+          className={`w-full text-sm font-bold p-2.5 rounded-lg border focus:border-orange-400 outline-none ${
+  isDarkMode
+    ? 'bg-stone-950 border-orange-800 text-orange-400'
+    : 'bg-white border-orange-200 text-orange-700'
+}`}
+          title={t('revenue')}
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
                                    </div>
                                 ))}
                              </div>
@@ -2305,13 +2473,71 @@ const restoreActiveAuditAfterHistoryRead = () => {
                           <ResponsiveContainer width="100%" height="100%">
                             {results.hasOpCosts ? (
                               <BarChart data={[{ name: t('performance'), inversion: results.totalSpend, operacion: results.operatingCosts, facturacion: results.totalRevenue, neta: results.realNetProfit }]} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e7e5e4" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: '#78716c' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#a8a29e' }} tickFormatter={(val) => money(val)} />
-                                <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 'bold' }} />
-                                <Bar dataKey="inversion" stackId="a" name={t('pdfSpend')} fill="#1c1917" barSize={60} />
-                                <Bar dataKey="operacion" stackId="a" name={t('opCostsShort')} fill="#a8a29e" radius={[6, 6, 0, 0]} barSize={60} />
-                                <Bar dataKey="facturacion" name={t('revenue')} fill="#ea580c" radius={[6, 6, 0, 0]} barSize={60} />
+                                <CartesianGrid
+  strokeDasharray="3 3"
+  vertical={false}
+  stroke={isDarkMode ? '#44403c' : '#e7e5e4'}
+/>
+
+<XAxis
+  dataKey="name"
+  axisLine={false}
+  tickLine={false}
+  tick={{
+    fontSize: 12,
+    fontWeight: 700,
+    fill: isDarkMode ? '#e7e5e4' : '#78716c'
+  }}
+/>
+
+<YAxis
+  axisLine={false}
+  tickLine={false}
+  tick={{
+    fontSize: 11,
+    fill: isDarkMode ? '#d6d3d1' : '#a8a29e'
+  }}
+  tickFormatter={(val) => money(val)}
+/>
+
+<RechartsTooltip
+  cursor={{ fill: 'transparent' }}
+  contentStyle={{
+    backgroundColor: isDarkMode ? '#1c1917' : '#ffffff',
+    borderRadius: '16px',
+    border: isDarkMode ? '1px solid #44403c' : 'none',
+    boxShadow: isDarkMode
+      ? '0 10px 25px -5px rgba(0, 0, 0, 0.35)'
+      : '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+    fontWeight: 'bold',
+    color: isDarkMode ? '#fafaf9' : '#1c1917'
+  }}
+/>
+
+<Bar
+  dataKey="inversion"
+  stackId="a"
+  name={t('pdfSpend')}
+  fill={isDarkMode ? '#f5f5f4' : '#1c1917'}
+  barSize={60}
+/>
+
+<Bar
+  dataKey="operacion"
+  stackId="a"
+  name={t('opCostsShort')}
+  fill="#a8a29e"
+  radius={[6, 6, 0, 0]}
+  barSize={60}
+/>
+
+<Bar
+  dataKey="facturacion"
+  name={t('revenue')}
+  fill={isDarkMode ? '#f97316' : '#ea580c'}
+  radius={[6, 6, 0, 0]}
+  barSize={60}
+/>
                                 <Bar dataKey="neta" name={t('netProfit')} fill={results.realNetProfit >= 0 ? "#22c55e" : "#ef4444"} radius={[6, 6, 0, 0]} barSize={60} />
                               </BarChart>
                             ) : (
@@ -2320,7 +2546,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: '#78716c' }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#a8a29e' }} tickFormatter={(val) => money(val)} />
                                 <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 'bold' }} />
-                                <Bar dataKey="inversion" name={t('investment')} fill="#1c1917" radius={[6, 6, 0, 0]} barSize={80} />
+                                <Bar dataKey="inversion" name={t('investment')} fill={isDarkMode ? '#f5f5f4' : '#1c1917'} radius={[6, 6, 0, 0]} barSize={80} />
                                 <Bar dataKey="facturacion" name={t('revenue')} fill="#ea580c" radius={[6, 6, 0, 0]} barSize={80} />
                               </BarChart>
                             )}
@@ -2337,15 +2563,51 @@ const restoreActiveAuditAfterHistoryRead = () => {
                           <p className="text-xs text-stone-500 mb-4 font-medium">{t('acquisitionDesc')}</p>
                           <div className="flex-grow flex items-center justify-center relative">
                             <ResponsiveContainer width="100%" height={160}>
-                              <PieChart>
-                                <Pie data={[{ name: 'Costo Ads', value: safeNum(results.totalSpend) }, { name: 'Resto', value: results.profit > 0 ? safeNum(results.profit) : 0 }]} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value" stroke="none">
-                                  {[{ name: 'Costo Ads', value: safeNum(results.totalSpend) }, { name: 'Resto', value: results.profit > 0 ? safeNum(results.profit) : 0 }].map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                                  ))}
-                                </Pie>
-                                <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', fontWeight: 'bold', fontSize: '12px' }} />
-                              </PieChart>
-                            </ResponsiveContainer>
+  <PieChart>
+    <Pie
+      data={[
+        { name: 'Costo Ads', value: safeNum(results.totalSpend) },
+        { name: 'Resto', value: results.profit > 0 ? safeNum(results.profit) : 0 }
+      ]}
+      cx="50%"
+      cy="50%"
+      innerRadius={50}
+      outerRadius={70}
+      paddingAngle={5}
+      dataKey="value"
+      stroke="none"
+    >
+      {[
+        { name: 'Costo Ads', value: safeNum(results.totalSpend) },
+        { name: 'Resto', value: results.profit > 0 ? safeNum(results.profit) : 0 }
+      ].map((entry, index) => (
+        <Cell
+          key={`cell-${index}`}
+          fill={
+            index === 0
+              ? (isDarkMode ? '#f97316' : '#ea580c')
+              : (isDarkMode ? '#57534e' : '#d6d3d1')
+          }
+        />
+      ))}
+    </Pie>
+
+    <RechartsTooltip
+      contentStyle={{
+        backgroundColor: isDarkMode ? '#1c1917' : '#ffffff',
+        borderRadius: '12px',
+        border: isDarkMode ? '1px solid #44403c' : 'none',
+        boxShadow: isDarkMode
+          ? '0 10px 25px -5px rgba(0, 0, 0, 0.35)'
+          : '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+        fontWeight: 'bold',
+        fontSize: '12px',
+        color: isDarkMode ? '#fafaf9' : '#1c1917'
+      }}
+      cursor={{ fill: 'transparent' }}
+    />
+  </PieChart>
+</ResponsiveContainer>
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                <span className="text-xl font-black text-stone-900">
                                  {results.mer > 0 ? `${(100 / results.mer).toFixed(0)}%` : '0%'}

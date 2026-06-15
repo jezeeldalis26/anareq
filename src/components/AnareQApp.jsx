@@ -1146,16 +1146,24 @@ setAuditPendingDelete(null);
       const metaCostPerResult = safeNum(results.mediaEfficiency.costPerResult);
       const realCostPerSale = safeNum(results.cpa);
       const metaRealGap = metaCostPerResult > 0 && realCostPerSale > 0 ? realCostPerSale / metaCostPerResult : 0;
+      const formatPdfInteger = (value) => {
+        const numericValue = Math.round(safeNum(value));
+        return numericValue > 0 ? new Intl.NumberFormat(locale).format(numericValue) : t('notAvailable');
+      };
 
       detailCard(M, y, detailW, t('mediaEfficiencyScore'), `${safeNum(results.mediaEfficiency.score)}/100`);
       detailCard(M + detailW + detailGap, y, detailW, t('ctr'), `${safeNum(results.mediaEfficiency.ctr).toFixed(2)}%`);
-      detailCard(M + (detailW + detailGap) * 2, y, detailW, t('costPerResult'), money(metaCostPerResult, 2));
+      detailCard(M + (detailW + detailGap) * 2, y, detailW, t('reach'), formatPdfInteger(results.mediaEfficiency.reach));
       y += 19;
 
       detailCard(M, y, detailW, t('metaCostPerResult'), metaCostPerResult > 0 ? money(metaCostPerResult, 2) : t('notAvailable'));
       detailCard(M + detailW + detailGap, y, detailW, t('realCostPerSale'), realCostPerSale > 0 ? money(realCostPerSale, 2) : t('notAvailable'));
       detailCard(M + (detailW + detailGap) * 2, y, detailW, t('metaRealCostGap'), metaRealGap > 0 ? `${metaRealGap.toFixed(1)}x` : t('notAvailable'));
-      y += 23;
+      y += 19;
+
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.1); setText(colors.muted);
+      pdf.text(lines(t('metaVsRealNote'), CONTENT_W - 4, 7.1).slice(0, 2), M + 2, y);
+      y += 9;
     }
 
     y = sectionTitle(t('pdfRecommendations'), y);

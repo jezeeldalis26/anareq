@@ -12,20 +12,19 @@ export const Toast = ({ message, visible, onClose }) => {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-[slideIn_0.3s_ease-out_forwards] no-print">
-      <div className="bg-stone-900 text-white px-5 py-4 rounded-2xl shadow-2xl border border-stone-700 flex items-center gap-3">
-        <div className="bg-green-500/20 p-1.5 rounded-full">
+    <div className="fixed bottom-5 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-[360px] z-50 no-print anareq-toast-wrap" aria-live="polite">
+      <div className="anareq-toast-card bg-stone-900 text-white px-5 py-4 rounded-2xl shadow-2xl border border-stone-700 flex items-start gap-3">
+        <div className="anareq-toast-icon bg-green-500/20 p-1.5 rounded-full shrink-0 mt-0.5">
           <CheckCircle className="w-5 h-5 text-green-400" />
         </div>
-        <div>
-          <p className="text-sm font-bold text-white">{message.title}</p>
-          <p className="text-xs text-stone-400 font-medium">{message.desc}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-white leading-tight">{message.title}</p>
+          <p className="text-xs text-stone-400 font-medium leading-relaxed mt-0.5">{message.desc}</p>
         </div>
-        <button onClick={onClose} className="ml-4 text-stone-500 hover:text-white transition-colors">
+        <button onClick={onClose} className="ml-2 text-stone-500 hover:text-white transition-colors text-xl leading-none" aria-label="Cerrar notificación">
           &times;
         </button>
       </div>
     </div>
   );
 };
-

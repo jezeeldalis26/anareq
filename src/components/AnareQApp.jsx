@@ -2190,8 +2190,8 @@ const restoreActiveAuditAfterHistoryRead = () => {
                   </div>
 
                   <div className="mt-8 space-y-3 relative z-10">
-                    <button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full flex justify-center items-center gap-2 bg-stone-900 hover:bg-black text-white font-bold py-4 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0">
-                      {isAnalyzing ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> {t('analyzing')}</> : t('analyze')}
+                    <button onClick={handleAnalyze} disabled={isAnalyzing} className="group w-full flex justify-center items-center gap-2 bg-stone-900 hover:bg-black text-white font-bold py-4 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:scale-100">
+                      {isAnalyzing ? <><span className="anareq-loader-ring" aria-hidden="true"></span> {t('analyzing')}</> : t('analyze')}
                     </button>
                   </div>
                 </div>
@@ -2203,24 +2203,24 @@ const restoreActiveAuditAfterHistoryRead = () => {
               
               {activeTab === 'view-report' && (
                 <div className="mb-6 flex justify-start no-print">
-                  <button onClick={() => setActiveTab('history')} className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-bold px-4 py-2 bg-white rounded-xl transition-all shadow-sm border border-stone-200">
-                    <ArrowLeft className="w-4 h-4"/> {t('backHistory')}
+                  <button onClick={() => setActiveTab('history')} className="group flex items-center gap-2 text-stone-600 hover:text-stone-900 font-bold px-4 py-2 bg-white rounded-xl transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] border border-stone-200">
+                    <ArrowLeft className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-0.5"/> {t('backHistory')}
                   </button>
                 </div>
               )}
 
               {!results && !isAnalyzing && activeTab === 'new' && (
-                <div className="h-full bg-white rounded-3xl border border-stone-200 border-dashed flex flex-col items-center justify-center p-12 text-stone-400 min-h-[500px]">
+                <div className="anareq-panel-enter h-full bg-white rounded-3xl border border-stone-200 border-dashed flex flex-col items-center justify-center p-12 text-stone-400 min-h-[500px]">
                   <div className="bg-stone-50 p-6 rounded-full shadow-inner mb-4 border border-stone-100"><Activity className="w-12 h-12 text-stone-300" /></div>
                   <h3 className="text-xl font-bold text-stone-700 mb-2">{t('reportEmpty')}</h3>
                   <p className="text-center max-w-md text-sm">{t('reportEmptyDesc')}</p>
                 </div>
               )}
 
-              {isAnalyzing && <div className="h-full min-h-[500px]"><DashboardSkeleton /></div>}
+              {isAnalyzing && <div className="h-full min-h-[500px]"><DashboardSkeleton label={t('analyzing')} /></div>}
 
               {results && !isAnalyzing && (
-                <div className="bg-transparent relative space-y-6">
+                <div className="anareq-panel-enter bg-transparent relative space-y-6">
                   <div className="space-y-6 bg-[#f4f2f0] p-0.5 print:bg-white print:p-0">
                     
                     {/* HEADER ESPECIAL SOLO PARA IMPRESIÓN PDF */}

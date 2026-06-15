@@ -1277,25 +1277,65 @@ setAuditPendingDelete(null);
 
   const generateShareText = (res, client, auditCurrencyCode = currencyCode) => {
     const auditMoney = (value, digits = 0) => formatCurrency(value, auditCurrencyCode, languageCode, digits);
-    return `📊 *${t('navNew')} anareQ - ${client || t('project')}*
+    const media = res?.mediaEfficiency || {};
+    const metaResults = safeNum(media.results);
+    const metaCostPerResult = safeNum(media.costPerResult);
+    const registeredSaleCost = safeNum(res?.cpa);
+    const metaRealGap = metaCostPerResult > 0 && registeredSaleCost > 0
+      ? registeredSaleCost / metaCostPerResult
+      : 0;
 
-${t('spend')}: ${auditMoney(res.totalSpend)}
-${t('revenue')}: ${auditMoney(res.totalRevenue)}.
+    const quickReadKey = metaResults <= 0
+      ? 'whatsappQuickManual'
+      : safeNum(res?.totalSales) <= 0
+        ? 'whatsappQuickNoSales'
+        : metaRealGap >= 3
+          ? 'whatsappQuickHighGap'
+          : 'whatsappQuickBalanced';
 
-*${t('businessIntel')}:*
-• ${t('returnMetric')} (MER): ${res.mer.toFixed(2)}x
-• ${t('conversionLabel')}: ${res.conversion.toFixed(1)}%
-${res.hasOpCosts ? `• ${t('realMargin')}: ${res.realNetMargin.toFixed(1)}% [${translateStatus(languageCode, res.marginLabel)}]
-` : ''}
-*${t('globalScore')}:* ${res.score}/100 (${translateStatus(languageCode, res.statusText)})
+    const considerKey = safeNum(res?.score) <= 55
+      ? 'whatsappConsiderReview'
+      : 'whatsappConsiderMonitor';
 
-*${t('conclusion')}:* ${res.summary}`;
+    return `📊 *Diagnóstico anareQ — ${client || t('project')}*
+
+*${t('status')}:* ${translateStatus(languageCode, res.statusText)}
+*${t('globalScore')}:* ${res.score}/100
+
+📌 *${t('whatsappDataAnareq')}*
+• ${t('spend')}: ${auditMoney(res.totalSpend)}
+• ${t('whatsappRegisteredRevenue')}: ${auditMoney(res.totalRevenue)}
+• ${t('pdfProfit')}: ${auditMoney(res.profit)}
+• MER: ${safeNum(res.mer).toFixed(2)}x
+• ${t('roiLabel')}: ${safeNum(res.roi).toFixed(1)}%
+
+📣 *${t('whatsappMetaAdsReading')}*
+• ${t('whatsappMetaResults')}: ${metaResults > 0 ? metaResults.toLocaleString(locale) : t('notAvailable')}
+• ${t('metaCostPerResult')}: ${metaCostPerResult > 0 ? auditMoney(metaCostPerResult, 2) : t('notAvailable')}
+• ${t('whatsappRegisteredSaleCost')}: ${registeredSaleCost > 0 ? auditMoney(registeredSaleCost, 2) : t('notAvailable')}
+• ${t('whatsappMetaVsRegisteredGap')}: ${metaRealGap > 0 ? `${metaRealGap.toFixed(1)}x` : t('notAvailable')}
+
+🧠 *${t('whatsappQuickReading')}*
+${t(quickReadKey)}
+
+🟡 *${t('whatsappConsider')}*
+${t(considerKey)}
+
+> _${t('whatsappNote')}_`;
   };
 
   const copyInterpretation = () => {
     if (!results) return;
     navigator.clipboard.writeText(generateShareText(results, clientName));
     setCopiedText(true); setTimeout(() => setCopiedText(false), 2000);
+  };
+
+  const handleShareWhatsAppSummary = () => {
+    if (!results) return;
+    const text = generateShareText(results, clientName);
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    showToastMessage(t('shareWhatsApp'), t('whatsappShareOpened'));
   };
 const saveActiveAuditBeforeHistoryRead = () => {
   if (historyReadSnapshotRef.current) return;
@@ -2780,13 +2820,28 @@ const restoreActiveAuditAfterHistoryRead = () => {
 
                         <div className="bg-stone-100 p-5 rounded-3xl border border-stone-200 relative group no-print">
                           <h3 className="text-xs font-black text-stone-500 uppercase tracking-widest mb-2">{t('copyableSummary')}</h3>
-                          <p className="text-xs text-stone-700 leading-relaxed font-medium pr-8">
-                            {t('spend')}: <strong>{money(results.totalSpend)}</strong> | {t('revenue')}: <strong>{money(results.totalRevenue)}</strong>.
+                          <p className="text-xs text-stone-700 leading-relaxed font-medium">
+                            {t('spend')}: <strong>{money(results.totalSpend)}</strong> | {t('whatsappRegisteredRevenue')}: <strong>{money(results.totalRevenue)}</strong>.
                             MER: <strong>{results.mer.toFixed(2)}x</strong> | {t('conversionLabel')}: <strong>{results.conversion.toFixed(1)}%</strong>.
                           </p>
-                          <button onClick={copyInterpretation} className="absolute top-4 right-4 p-2 bg-white rounded-xl shadow-sm border border-stone-200 text-stone-600 hover:text-orange-600 hover:border-orange-200 transition-colors" title={t('copySummary')}>
-                            {copiedText ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                          </button>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                              onClick={copyInterpretation}
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-xl shadow-sm border border-stone-200 text-stone-600 hover:text-orange-600 hover:border-orange-200 transition-colors text-xs font-black"
+                              title={t('copySummary')}
+                            >
+                              {copiedText ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                              {copiedText ? t('copied') : t('copySummary')}
+                            </button>
+                            <button
+                              onClick={handleShareWhatsAppSummary}
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-sm transition-colors text-xs font-black"
+                              title={t('shareWhatsApp')}
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                              {t('shareWhatsApp')}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

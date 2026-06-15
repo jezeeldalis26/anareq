@@ -30,6 +30,12 @@
   50% { opacity: 0.9; transform: scale(1.06); }
 }
 
+@keyframes anareqSoftPop {
+  0% { transform: scale(0.96); opacity: 0.72; }
+  55% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .anareq-panel-enter {
   animation: anareqFadeUp 0.34s ease-out both;
 }
@@ -68,6 +74,10 @@
   animation: anareqPulseGlow 2.4s ease-in-out infinite;
 }
 
+.anareq-soft-pop {
+  animation: anareqSoftPop 0.34s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anareq-panel-enter,
   .anareq-shimmer,
@@ -75,6 +85,7 @@
   .anareq-skeleton-orb,
   .anareq-toast-wrap,
   .anareq-toast-icon,
+  .anareq-soft-pop,
   [class*="animate-"] {
     animation: none !important;
   }
@@ -91,7 +102,8 @@
   .anareq-loader-ring,
   .anareq-skeleton-orb,
   .anareq-toast-wrap,
-  .anareq-toast-icon {
+  .anareq-toast-icon,
+  .anareq-soft-pop {
     animation: none !important;
   }
 }

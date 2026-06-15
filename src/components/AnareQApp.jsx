@@ -2870,8 +2870,17 @@ const restoreActiveAuditAfterHistoryRead = () => {
 
               {results && (
                 <div id="report-action-buttons" className="mt-8 mb-12 flex flex-col sm:flex-row justify-center items-center gap-3 px-4 sm:px-0 no-print">
-                  <button onClick={handleSaveAudit} disabled={saveStatus === 'guardando' || saveStatus === 'guardado'} className={`flex-1 max-w-[200px] flex justify-center items-center gap-2 py-4 rounded-2xl text-base font-black transition-all border ${saveStatus === 'guardado' ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-white hover:bg-stone-50 text-stone-700 border-2 border-stone-200 shadow-sm'}`}>
-                    {saveStatus === 'guardado' ? <><CheckCircle className="w-5 h-5" /> {t('saved')}</> : <><Save className="w-5 h-5" /> {t('save')}</>}
+                  <button
+                    onClick={handleSaveAudit}
+                    disabled={saveStatus === 'guardando' || saveStatus === 'guardado'}
+                    aria-busy={saveStatus === 'guardando'}
+                    className={`group flex-1 max-w-[200px] flex justify-center items-center gap-2 py-4 rounded-2xl text-base font-black border transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed ${saveStatus === 'guardado' ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm anareq-soft-pop' : saveStatus === 'guardando' ? 'bg-stone-900 border-stone-900 text-white shadow-lg shadow-stone-900/15' : 'bg-white hover:bg-stone-50 text-stone-700 border-2 border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-orange-200'}`}
+                  >
+                    {saveStatus === 'guardado'
+                      ? <><CheckCircle className="w-5 h-5 anareq-soft-pop" /> {t('saved')}</>
+                      : saveStatus === 'guardando'
+                        ? <><RefreshCw className="w-5 h-5 animate-spin" /> {languageCode === 'en' ? 'Saving...' : languageCode === 'pt' ? 'Salvando...' : 'Guardando...'}</>
+                        : <><Save className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3" /> {t('save')}</>}
                   </button>
                   <button onClick={handleExportPDF} disabled={isGeneratingPDF} className="flex-1 max-w-[250px] flex justify-center items-center gap-2 py-4 bg-stone-900 hover:bg-black text-white rounded-2xl text-base font-black transition-all shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0">
                     {isGeneratingPDF ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> {t('generating')}</> : <><Printer className="w-5 h-5" /> {t('pdfDynamic')}</>}

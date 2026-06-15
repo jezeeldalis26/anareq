@@ -1,41 +1,61 @@
-export const safeNum = (val) => (isNaN(val) || !isFinite(val) ? 0 : val);
+export const safeNum = (val) => (isNaN(val) || !isFinite(val) ? 0 : Number(val));
 
 export const parseSafeFloat = (val) => {
-  if (!val) return 0;
-  let s = String(val).trim();
-  s = s.replace(/\s/g, ''); // Quita espacios vacíos
-  
-  // Si tiene punto y coma (ej. 1,500.50 o 1.500,50)
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return safeNum(val);
+
+  let s = String(val)
+    .trim()
+    .replace(/\u00a0/g, '')
+    .replace(/\s/g, '');
+
+  if (!s) return 0;
+
+  const isNegativeByParentheses = /^\(.*\)$/.test(s);
+  s = s.replace(/[()]/g, '');
+
+  // Mantiene solo dígitos, separadores decimales/miles y signo.
+  // Esto permite leer valores como R$1.234,56, US$1,234.56, 12,5% o $99.90.
+  s = s.replace(/[^0-9,\.\-+]/g, '');
+
+  if (!s || s === '-' || s === '+') return 0;
+
+  const isNegative = isNegativeByParentheses || s.startsWith('-');
+  s = s.replace(/[+-]/g, '');
+
   if (s.includes(',') && s.includes('.')) {
     if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
-      // Formato EU: 1.500,50 -> 1500.50
+      // Formato latino/europeo: 1.500,50 -> 1500.50
       s = s.replace(/\./g, '').replace(',', '.');
     } else {
       // Formato US: 1,500.50 -> 1500.50
       s = s.replace(/,/g, '');
     }
   } else if (s.includes(',')) {
-    // Si tiene más de una coma (ej. 1,000,000)
-    if ((s.match(/,/g) || []).length > 1) {
+    const commaCount = (s.match(/,/g) || []).length;
+    if (commaCount > 1) {
       s = s.replace(/,/g, '');
     } else {
-      // Una sola coma
-      const parts = s.split(',');
-      if (parts[1] && parts[1].length === 3) {
-        // Si hay exactamente 3 dígitos después de la coma, es casi seguro un mil (1,500 -> 1500)
+      const [integerPart, decimalPart = ''] = s.split(',');
+      if (decimalPart.length === 3 && integerPart.length <= 3) {
         s = s.replace(',', '');
       } else {
-        // De lo contrario, es un decimal (15,50 -> 15.5)
         s = s.replace(',', '.');
       }
     }
+  } else if ((s.match(/\./g) || []).length > 1) {
+    s = s.replace(/\./g, '');
   }
-  return parseFloat(s) || 0;
+
+  const parsed = parseFloat(s);
+  if (!isFinite(parsed) || isNaN(parsed)) return 0;
+
+  return isNegative ? -Math.abs(parsed) : parsed;
 };
 
-// parseSafeInt ahora utiliza la protección robusta de parseSafeFloat
+// parseSafeInt utiliza la protección robusta de parseSafeFloat.
 export const parseSafeInt = (val) => {
-  if (!val) return 0;
+  if (val === undefined || val === null || val === '') return 0;
   return Math.round(parseSafeFloat(val));
 };
 
@@ -49,4 +69,3 @@ export const escapeCSV = (value) => {
   const normalized = value === undefined || value === null ? '' : String(value);
   return `"${normalized.replace(/"/g, '""')}"`;
 };
-

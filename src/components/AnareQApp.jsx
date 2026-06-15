@@ -419,25 +419,103 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const discardMetaImport = () => { setMetaImport({ ...EMPTY_META_IMPORT }); setAuditSource('manual'); if (metaFileInputRef.current) metaFileInputRef.current.value = ''; };
   const toggleMetaRow = (rowId) => setMetaImport(prev => ({ ...prev, selectedIds: prev.selectedIds.includes(rowId) ? prev.selectedIds.filter(id => id !== rowId) : [...prev.selectedIds, rowId] }));
   const handleMetaFileUpload = async (event) => {
-    const file = event.target.files?.[0]; if (!file) return;
-    setIsImportingMeta(true); setFormError('');
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingMeta(true);
+    setFormError('');
+
     try {
       if (file.size > 5 * 1024 * 1024) throw new Error(t('importTooLarge'));
-      const extension = file.name.split('.').pop()?.toLowerCase(); let rawRows = []; let format = '';
+
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      let rawRows = [];
+      let format = '';
+
       if (extension === 'csv') {
-        format = 'csv'; await waitForExternalLibrary({ marker: 'papaparse', isReady: () => Boolean(window.Papa?.parse), scripts: ['https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js', 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'] });
-        rawRows = await new Promise((resolve, reject) => window.Papa.parse(file, { header: true, skipEmptyLines: true, complete: result => resolve(result.data || []), error: reject }));
+        format = 'csv';
+        await waitForExternalLibrary({
+          marker: 'papaparse',
+          isReady: () => Boolean(window.Papa?.parse),
+          scripts: [
+            'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js',
+            'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
+          ]
+        });
+
+        rawRows = await new Promise((resolve, reject) => window.Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: result => resolve(result.data || []),
+          error: reject
+        }));
       } else if (['xlsx', 'xls'].includes(extension)) {
-        format = 'xlsx'; await waitForExternalLibrary({ marker: 'sheetjs', isReady: () => Boolean(window.XLSX?.read), scripts: ['https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'] });
-        const buffer = await file.arrayBuffer(); const workbook = window.XLSX.read(buffer, { type: 'array' }); const sheet = workbook.Sheets[workbook.SheetNames[0]]; rawRows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      } else throw new Error(t('importUnsupported'));
+        format = 'xlsx';
+        await waitForExternalLibrary({
+          marker: 'sheetjs',
+          isReady: () => Boolean(window.XLSX?.read),
+          scripts: [
+            'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+            'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+          ]
+        });
+
+        const buffer = await file.arrayBuffer();
+        const workbook = window.XLSX.read(buffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        rawRows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      } else {
+        throw new Error(t('importUnsupported'));
+      }
+
       if (rawRows.length > 600) throw new Error(`${t('importTooLarge')} (${rawRows.length} filas)`);
-      const normalized = normalizeImportedMetaRows(rawRows); const warnings = [];
-      if (!normalized.rows.some(row => row.spend > 0)) warnings.push(t('importMissingSpend')); if (normalized.level === 'campaigns') warnings.push(t('importCampaignLevel')); if (normalized.resultTypes.length > 1) warnings.push(t('importMultipleResultTypes')); warnings.push(t('importRealDataReminder'));
-      setMetaImport({ status: normalized.rows.length ? 'preview' : 'error', fileName: file.name, sourceFormat: format, ...normalized, selectedIds: normalized.rows.map(row => row.id), warnings, errors: normalized.rows.length ? [] : [t('importNoRows')], importedAt: '' });
-    } catch (error) { console.error('Meta file import failed:', error); setMetaImport({ ...EMPTY_META_IMPORT, status: 'error', fileName: file.name, errors: [error?.message || t('importUnsupported')] }); }
-    finally { setIsImportingMeta(false); }
+
+      const normalized = normalizeImportedMetaRows(rawRows);
+      const warnings = [];
+
+      if (!normalized.rows.some(row => row.spend > 0)) warnings.push(t('importMissingSpend'));
+
+      const missingWarningKeys = {
+        impressions: 'importMissingImpressions',
+        reach: 'importMissingReach',
+        clicks: 'importMissingClicks',
+        results: 'importMissingResults',
+        costPerResult: 'importMissingCostPerResult'
+      };
+
+      (normalized.missingFields || []).forEach((field) => {
+        const warningKey = missingWarningKeys[field];
+        if (warningKey) warnings.push(t(warningKey));
+      });
+
+      if ((normalized.derivedFields || []).length > 0) warnings.push(t('importDerivedMetrics'));
+      if (normalized.level === 'campaigns') warnings.push(t('importCampaignLevel'));
+      if (normalized.resultTypes.length > 1) warnings.push(t('importMultipleResultTypes'));
+      warnings.push(t('importRealDataReminder'));
+
+      setMetaImport({
+        status: normalized.rows.length ? 'preview' : 'error',
+        fileName: file.name,
+        sourceFormat: format,
+        ...normalized,
+        selectedIds: normalized.rows.map(row => row.id),
+        warnings: [...new Set(warnings)],
+        errors: normalized.rows.length ? [] : [t('importNoRows')],
+        importedAt: ''
+      });
+    } catch (error) {
+      console.error('Meta file import failed:', error);
+      setMetaImport({
+        ...EMPTY_META_IMPORT,
+        status: 'error',
+        fileName: file.name,
+        errors: [error?.message || t('importUnsupported')]
+      });
+    } finally {
+      setIsImportingMeta(false);
+    }
   };
+
   const applyMetaImport = () => {
     const selectedRows = metaImport.rows.filter(row => metaImport.selectedIds.includes(row.id)); if (!selectedRows.length) { setFormError(t('importNoRows')); return; }
     const importedSets = buildAdSetsFromMetaRows(selectedRows, metaImport.level); if (!importedSets.length) { setFormError(t('importNoRows')); return; }
@@ -1065,10 +1143,19 @@ setAuditPendingDelete(null);
       y = sectionTitle(t('mediaScoreTitle'), y);
       const detailGap = 4;
       const detailW = (CONTENT_W - detailGap * 2) / 3;
+      const metaCostPerResult = safeNum(results.mediaEfficiency.costPerResult);
+      const realCostPerSale = safeNum(results.cpa);
+      const metaRealGap = metaCostPerResult > 0 && realCostPerSale > 0 ? realCostPerSale / metaCostPerResult : 0;
+
       detailCard(M, y, detailW, t('mediaEfficiencyScore'), `${safeNum(results.mediaEfficiency.score)}/100`);
       detailCard(M + detailW + detailGap, y, detailW, t('ctr'), `${safeNum(results.mediaEfficiency.ctr).toFixed(2)}%`);
-      detailCard(M + (detailW + detailGap) * 2, y, detailW, t('costPerResult'), money(results.mediaEfficiency.costPerResult, 2));
-      y += 21;
+      detailCard(M + (detailW + detailGap) * 2, y, detailW, t('costPerResult'), money(metaCostPerResult, 2));
+      y += 19;
+
+      detailCard(M, y, detailW, t('metaCostPerResult'), metaCostPerResult > 0 ? money(metaCostPerResult, 2) : t('notAvailable'));
+      detailCard(M + detailW + detailGap, y, detailW, t('realCostPerSale'), realCostPerSale > 0 ? money(realCostPerSale, 2) : t('notAvailable'));
+      detailCard(M + (detailW + detailGap) * 2, y, detailW, t('metaRealCostGap'), metaRealGap > 0 ? `${metaRealGap.toFixed(1)}x` : t('notAvailable'));
+      y += 23;
     }
 
     y = sectionTitle(t('pdfRecommendations'), y);
@@ -1305,7 +1392,8 @@ const restoreActiveAuditAfterHistoryRead = () => {
       'Fecha', 'Cliente', 'Campaña', 'Moneda', 'Periodo inicio', 'Periodo fin', 'Presupuesto referencial Meta',
       'Inversion Ads', 'Leads', 'Ventas', 'Facturacion', 'MER', 'CPA', 'CPL',
       'Conversion %', 'Ganancia Ads', 'ROI %', 'Costos operativos', 'Ganancia neta real',
-      'Margen neto real %', 'Score global', 'Estado', 'Confiabilidad datos Meta', 'Fuente', 'Media Efficiency Score'
+      'Margen neto real %', 'Score global', 'Estado', 'Confiabilidad datos Meta', 'Fuente', 'Media Efficiency Score',
+      'Meta impresiones', 'Meta alcance', 'Meta clics', 'Meta CTR %', 'Meta CPC', 'Meta CPM', 'Meta frecuencia', 'Meta costo por resultado', 'Meta resultados atribuidos'
     ];
 
     const rows = recordsToExport.map((item) => {
@@ -1336,7 +1424,16 @@ const restoreActiveAuditAfterHistoryRead = () => {
         result.statusText || '',
         result.measurementConfidence ? `${result.measurementConfidence.score}/100 - ${result.measurementConfidence.label}` : 'No evaluada',
         item.source || result.source || 'manual',
-        result.mediaEfficiency?.available ? result.mediaEfficiency.score : ''
+        result.mediaEfficiency?.available ? result.mediaEfficiency.score : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.impressions) : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.reach) : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.clicks) : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.ctr).toFixed(2) : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.cpc).toFixed(2) : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.cpm).toFixed(2) : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.frequency).toFixed(2) : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.costPerResult).toFixed(2) : '',
+        result.mediaEfficiency?.available ? safeNum(result.mediaEfficiency.results) : ''
       ].map(escapeCSV).join(',');
     });
 
@@ -1387,6 +1484,36 @@ const restoreActiveAuditAfterHistoryRead = () => {
     setGlossarySearch(item.term);
     setExpandedGlossaryTerms(prev => ({ ...prev, [item.id]: true }));
   };
+
+  const formatMetaInteger = (value) => {
+    const numericValue = parseSafeInt(value);
+    return numericValue > 0 ? new Intl.NumberFormat(locale).format(numericValue) : '—';
+  };
+
+  const formatMetaDecimal = (value, digits = 2) => {
+    const numericValue = parseSafeFloat(value);
+    return numericValue > 0 ? numericValue.toFixed(digits) : '—';
+  };
+
+  const formatMetaPercent = (value) => {
+    const numericValue = parseSafeFloat(value);
+    return numericValue > 0 ? `${numericValue.toFixed(2)}%` : '—';
+  };
+
+  const formatMetaMoney = (value) => {
+    const numericValue = parseSafeFloat(value);
+    return numericValue > 0 ? money(numericValue, 2) : '—';
+  };
+
+  const getMetaContextCards = (meta = {}) => ([
+    { key: 'impressions', label: t('impressions'), value: formatMetaInteger(meta.impressions) },
+    { key: 'reach', label: t('reach'), value: formatMetaInteger(meta.reach) },
+    { key: 'frequency', label: t('frequency'), value: formatMetaDecimal(meta.frequency, 2) },
+    { key: 'ctr', label: t('ctr'), value: formatMetaPercent(meta.ctr) },
+    { key: 'cpc', label: t('cpc'), value: formatMetaMoney(meta.cpc) },
+    { key: 'cpm', label: t('cpm'), value: formatMetaMoney(meta.cpm) },
+    { key: 'costPerResult', label: t('costPerResult'), value: formatMetaMoney(meta.costPerResult) }
+  ]);
 
   const toggleGlossaryTerm = (termId) => {
     setExpandedGlossaryTerms(prev => ({ ...prev, [termId]: !prev[termId] }));
@@ -1693,7 +1820,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
                         <div className="flex flex-wrap gap-2 shrink-0"><input ref={metaFileInputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden" onChange={handleMetaFileUpload}/><button type="button" onClick={() => metaFileInputRef.current?.click()} disabled={isImportingMeta} className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-3 py-2.5 text-xs font-black text-white hover:bg-black disabled:opacity-50"><Upload className="w-4 h-4"/>{isImportingMeta ? t('analyzing') : metaImport.fileName ? t('replaceFile') : t('chooseFile')}</button>{metaImport.status !== 'idle' && <button type="button" onClick={discardMetaImport} className="inline-flex items-center gap-1 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-xs font-black text-stone-600 hover:bg-stone-50"><XCircle className="w-4 h-4"/>{t('importCancel')}</button>}</div>
                       </div>
                       {metaImport.errors?.length > 0 && <div className="mt-4 space-y-2">{metaImport.errors.map((error, index) => <div key={index} className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{error}</div>)}</div>}
-                      {['preview','applied'].includes(metaImport.status) && <div className="mt-4 rounded-xl border border-stone-200 bg-white p-3 sm:p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-black text-green-700">{t('importDetected')}</p><p className="mt-1 text-[11px] font-bold text-stone-500">{metaImport.fileName}</p></div>{metaImport.status === 'applied' && <BenchmarkTag status="good" text={t('importedBadge')} />}</div><div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">{[[t('importLevel'),metaImport.level],[t('importCurrency'),metaImport.currency || '-'],[t('importPeriod'),`${metaImport.dateRange.start || '-'} / ${metaImport.dateRange.end || '-'}`],[t('importRows'),metaImport.rows.length]].map(([label,value]) => <div key={label} className="rounded-lg bg-stone-50 p-2"><p className="text-[9px] font-black uppercase tracking-wider text-stone-400">{label}</p><p className="mt-1 text-xs font-black text-stone-800">{value}</p></div>)}</div>{metaImport.warnings?.length > 0 && <div className="mt-3 space-y-1">{metaImport.warnings.map((warning,index)=><p key={index} className="flex items-start gap-1.5 text-[11px] font-bold leading-relaxed text-amber-700"><AlertTriangle className="mt-0.5 w-3.5 h-3.5 shrink-0"/>{warning}</p>)}</div>}{metaImport.status === 'preview' && <><div className="mt-4 flex items-center justify-between gap-2"><p className="text-xs font-black text-stone-800">{t('importSelectRows')}</p><p className="text-[10px] font-bold text-stone-400">{metaImport.selectedIds.length}/{metaImport.rows.length}</p></div><div className="mt-2 max-h-64 overflow-auto rounded-xl border border-stone-200"><table className="w-full min-w-[620px] text-left text-[11px]"><thead className="sticky top-0 bg-stone-100 text-[9px] uppercase tracking-wider text-stone-500"><tr><th className="p-2"></th><th className="p-2">{t('importedName')}</th><th className="p-2 text-right">{t('spend')}</th><th className="p-2 text-right">{t('impressions')}</th><th className="p-2 text-right">{t('clicks')}</th><th className="p-2 text-right">{t('leads')}</th></tr></thead><tbody>{metaImport.rows.map(row => <tr key={row.id} className="border-t border-stone-100"><td className="p-2"><input type="checkbox" checked={metaImport.selectedIds.includes(row.id)} onChange={()=>toggleMetaRow(row.id)}/></td><td className="p-2 font-bold text-stone-800">{row.adName || row.adSetName || row.campaignName || `${t('row')} ${row.rowNumber}`}</td><td className="p-2 text-right font-bold">{money(row.spend,2)}</td><td className="p-2 text-right">{row.impressions}</td><td className="p-2 text-right">{row.clicks}</td><td className="p-2 text-right">{row.results}</td></tr>)}</tbody></table></div><button type="button" onClick={applyMetaImport} className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-xs font-black text-white hover:bg-orange-700"><Check className="w-4 h-4"/>{t('importSelected')}</button></>}</div>}
+                      {['preview','applied'].includes(metaImport.status) && <div className="mt-4 rounded-xl border border-stone-200 bg-white p-3 sm:p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-black text-green-700">{t('importDetected')}</p><p className="mt-1 text-[11px] font-bold text-stone-500">{metaImport.fileName}</p></div>{metaImport.status === 'applied' && <BenchmarkTag status="good" text={t('importedBadge')} />}</div><div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">{[[t('importLevel'),metaImport.level],[t('importCurrency'),metaImport.currency || '-'],[t('importPeriod'),`${metaImport.dateRange.start || '-'} / ${metaImport.dateRange.end || '-'}`],[t('importRows'),metaImport.rows.length]].map(([label,value]) => <div key={label} className="rounded-lg bg-stone-50 p-2"><p className="text-[9px] font-black uppercase tracking-wider text-stone-400">{label}</p><p className="mt-1 text-xs font-black text-stone-800">{value}</p></div>)}</div>{metaImport.warnings?.length > 0 && <div className="mt-3 space-y-1">{metaImport.warnings.map((warning,index)=><p key={index} className="flex items-start gap-1.5 text-[11px] font-bold leading-relaxed text-amber-700"><AlertTriangle className="mt-0.5 w-3.5 h-3.5 shrink-0"/>{warning}</p>)}</div>}{metaImport.status === 'preview' && <><div className="mt-4 flex items-center justify-between gap-2"><p className="text-xs font-black text-stone-800">{t('importSelectRows')}</p><p className="text-[10px] font-bold text-stone-400">{metaImport.selectedIds.length}/{metaImport.rows.length}</p></div><div className="mt-2 max-h-64 overflow-auto rounded-xl border border-stone-200"><table className="w-full min-w-[620px] text-left text-[11px]"><thead className="sticky top-0 bg-stone-100 text-[9px] uppercase tracking-wider text-stone-500"><tr><th className="p-2"></th><th className="p-2">{t('importedName')}</th><th className="p-2 text-right">{t('spend')}</th><th className="p-2 text-right">{t('impressions')}</th><th className="p-2 text-right">{t('reach')}</th><th className="p-2 text-right">{t('clicks')}</th><th className="p-2 text-right">{t('leads')}</th><th className="p-2 text-right">{t('costPerResult')}</th></tr></thead><tbody>{metaImport.rows.map(row => <tr key={row.id} className="border-t border-stone-100"><td className="p-2"><input type="checkbox" checked={metaImport.selectedIds.includes(row.id)} onChange={()=>toggleMetaRow(row.id)}/></td><td className="p-2 font-bold text-stone-800">{row.adName || row.adSetName || row.campaignName || `${t('row')} ${row.rowNumber}`}</td><td className="p-2 text-right font-bold">{money(row.spend,2)}</td><td className="p-2 text-right">{safeNum(row.impressions).toLocaleString(locale)}</td><td className="p-2 text-right">{safeNum(row.reach).toLocaleString(locale)}</td><td className="p-2 text-right">{safeNum(row.clicks).toLocaleString(locale)}</td><td className="p-2 text-right">{safeNum(row.results).toLocaleString(locale)}</td><td className="p-2 text-right">{money(row.costPerResult,2)}</td></tr>)}</tbody></table></div><button type="button" onClick={applyMetaImport} className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-xs font-black text-white hover:bg-orange-700"><Check className="w-4 h-4"/>{t('importSelected')}</button></>}</div>}
                     </div>
 
                     {/* BÁSICOS */}
@@ -1816,6 +1943,33 @@ const restoreActiveAuditAfterHistoryRead = () => {
         />
       </div>
     </div>
+
+    {ad.meta && (
+      <div className={`mt-3 rounded-lg border p-2.5 ${
+        isDarkMode
+          ? 'border-stone-700 bg-stone-950/60'
+          : 'border-stone-200 bg-white/70'
+      }`}>
+        <p className="mb-2 text-[9px] font-black uppercase tracking-wider text-stone-500">
+          {t('metaImportedContext')}
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+          {getMetaContextCards(ad.meta).map((item) => (
+            <div
+              key={item.key}
+              className={`rounded-lg border px-2.5 py-2 ${
+                isDarkMode
+                  ? 'border-stone-700 bg-stone-900'
+                  : 'border-stone-100 bg-stone-50'
+              }`}
+            >
+              <p className="text-[8px] font-black uppercase tracking-wide text-stone-400">{item.label}</p>
+              <p className={`mt-1 text-[12px] font-black ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
   </div>
 
   <div className={`rounded-xl border p-3 ${
@@ -2191,7 +2345,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
 
 
                     {/* MEDIA EFFICIENCY SCORE: separado de la rentabilidad financiera */}
-                    {results.mediaEfficiency?.available && <div className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-stone-200 page-break-avoid"><div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-orange-600">Meta Ads</p><h3 className="mt-1 text-lg font-black text-stone-900">{t('mediaScoreTitle')}</h3><p className="mt-1 text-xs font-medium leading-relaxed text-stone-500">{t('mediaScoreDesc')}</p></div><div className="rounded-2xl bg-stone-900 px-4 py-3 text-center text-white"><p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Score</p><p className="text-2xl font-black text-orange-400">{results.mediaEfficiency.score}<span className="text-xs text-stone-400">/100</span></p></div></div><div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">{[[t('costPerResult'),money(results.mediaEfficiency.costPerResult,2)],[t('ctr'),`${results.mediaEfficiency.ctr.toFixed(2)}%`],[t('cpc'),money(results.mediaEfficiency.cpc,2)],[t('cpm'),money(results.mediaEfficiency.cpm,2)],[t('frequency'),results.mediaEfficiency.frequency.toFixed(2)],[t('mediaVolume'),results.mediaEfficiency.results.toLocaleString()]].map(([label,value])=><div key={label} className="rounded-xl border border-stone-200 bg-stone-50 p-3"><p className="text-[9px] font-black uppercase tracking-wider text-stone-400">{label}</p><p className="mt-1 text-sm font-black text-stone-900">{value}</p></div>)}</div>{results.mediaEfficiency.alerts?.length > 0 && <div className="mt-4 space-y-2">{results.mediaEfficiency.alerts.map(alert=><div key={alert} className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-relaxed text-amber-800"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0"/>{alert === 'saturation' ? t('saturationAlert') : t('concentratedSpendAlert')}</div>)}</div>}<div className="mt-4 overflow-x-auto rounded-xl border border-stone-200"><table className="w-full min-w-[760px] text-left text-xs"><thead><tr className="bg-stone-100 text-[10px] uppercase tracking-wider text-stone-500"><th className="p-3">{t('metaRowsTitle')}</th><th className="p-3 text-right">{t('investment')}</th><th className="p-3 text-right">{t('leads')}</th><th className="p-3 text-right">{t('costPerResult')}</th><th className="p-3 text-right">{t('ctr')}</th><th className="p-3 text-right">{t('spendDistribution')}</th><th className="p-3 text-right">{t('resultsDistribution')}</th><th className="p-3 text-right">{t('metaEfficiency')}</th></tr></thead><tbody>{results.mediaEfficiency.rows.slice(0,12).map(row=><tr key={row.id} className="border-t border-stone-100"><td className="p-3 font-bold text-stone-800">{row.adName || row.groupName}</td><td className="p-3 text-right">{money(row.spend,2)}</td><td className="p-3 text-right">{safeNum(row.results).toLocaleString()}</td><td className="p-3 text-right">{money(row.costPerResult,2)}</td><td className="p-3 text-right">{safeNum(row.ctr).toFixed(2)}%</td><td className="p-3 text-right">{safeNum(row.spendShare).toFixed(1)}%</td><td className="p-3 text-right">{safeNum(row.resultShare).toFixed(1)}%</td><td className="p-3 text-right font-black text-orange-600">{row.efficiencyScore}/100</td></tr>)}</tbody></table></div></div>}
+                    {results.mediaEfficiency?.available && <div className="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-stone-200 page-break-avoid"><div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-orange-600">Meta Ads</p><h3 className="mt-1 text-lg font-black text-stone-900">{t('mediaScoreTitle')}</h3><p className="mt-1 text-xs font-medium leading-relaxed text-stone-500">{t('mediaScoreDesc')}</p></div><div className="rounded-2xl bg-stone-900 px-4 py-3 text-center text-white"><p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Score</p><p className="text-2xl font-black text-orange-400">{results.mediaEfficiency.score}<span className="text-xs text-stone-400">/100</span></p></div></div><div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2">{[[t('costPerResult'),money(results.mediaEfficiency.costPerResult,2)],[t('impressions'),safeNum(results.mediaEfficiency.impressions).toLocaleString(locale)],[t('reach'),safeNum(results.mediaEfficiency.reach).toLocaleString(locale)],[t('clicks'),safeNum(results.mediaEfficiency.clicks).toLocaleString(locale)],[t('ctr'),`${results.mediaEfficiency.ctr.toFixed(2)}%`],[t('cpc'),money(results.mediaEfficiency.cpc,2)],[t('cpm'),money(results.mediaEfficiency.cpm,2)],[t('frequency'),results.mediaEfficiency.frequency.toFixed(2)],[t('mediaVolume'),results.mediaEfficiency.results.toLocaleString(locale)]].map(([label,value])=><div key={label} className="rounded-xl border border-stone-200 bg-stone-50 p-3"><p className="text-[9px] font-black uppercase tracking-wider text-stone-400">{label}</p><p className="mt-1 text-sm font-black text-stone-900">{value}</p></div>)}</div>{results.mediaEfficiency.alerts?.length > 0 && <div className="mt-4 space-y-2">{results.mediaEfficiency.alerts.map(alert=><div key={alert} className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-relaxed text-amber-800"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0"/>{alert === 'saturation' ? t('saturationAlert') : t('concentratedSpendAlert')}</div>)}</div>}<div className="mt-4 overflow-x-auto rounded-xl border border-stone-200"><table className="w-full min-w-[760px] text-left text-xs"><thead><tr className="bg-stone-100 text-[10px] uppercase tracking-wider text-stone-500"><th className="p-3">{t('metaRowsTitle')}</th><th className="p-3 text-right">{t('investment')}</th><th className="p-3 text-right">{t('leads')}</th><th className="p-3 text-right">{t('costPerResult')}</th><th className="p-3 text-right">{t('ctr')}</th><th className="p-3 text-right">{t('spendDistribution')}</th><th className="p-3 text-right">{t('resultsDistribution')}</th><th className="p-3 text-right">{t('metaEfficiency')}</th></tr></thead><tbody>{results.mediaEfficiency.rows.slice(0,12).map(row=><tr key={row.id} className="border-t border-stone-100"><td className="p-3 font-bold text-stone-800">{row.adName || row.groupName}</td><td className="p-3 text-right">{money(row.spend,2)}</td><td className="p-3 text-right">{safeNum(row.results).toLocaleString()}</td><td className="p-3 text-right">{money(row.costPerResult,2)}</td><td className="p-3 text-right">{safeNum(row.ctr).toFixed(2)}%</td><td className="p-3 text-right">{safeNum(row.spendShare).toFixed(1)}%</td><td className="p-3 text-right">{safeNum(row.resultShare).toFixed(1)}%</td><td className="p-3 text-right font-black text-orange-600">{row.efficiencyScore}/100</td></tr>)}</tbody></table></div></div>}
 
                     {/* NUEVO: ESTRUCTURA DE CAMPAÑA & NOTAS (CON TABLA DE CONJUNTOS) */}
                     <div className="grid grid-cols-1 gap-4 animate-[slideUpFade_0.4s_ease-out_0.15s_both] page-break-avoid">

@@ -259,9 +259,8 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
     window.addEventListener('appinstalled', onAppInstalled);
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((error) => console.warn('PWA service worker registration failed:', error));
-    }
+    // El service worker lo registra vite-plugin-pwa durante el build.
+    // Evita registrar manualmente /sw.js para no duplicar ciclos de actualización.
 
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);

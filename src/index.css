@@ -36,6 +36,25 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
+@keyframes anareqNavBar {
+  from { opacity: 0; transform: scaleY(0.55); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+@keyframes anareqMobileNavDot {
+  from { opacity: 0; transform: scaleX(0.45); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+.anareq-nav-active-bar {
+  transform-origin: center;
+  animation: anareqNavBar 0.24s ease-out both;
+}
+
+.anareq-mobile-nav-dot {
+  animation: anareqMobileNavDot 0.24s ease-out both;
+}
+
 .anareq-panel-enter {
   animation: anareqFadeUp 0.34s ease-out both;
 }
@@ -86,6 +105,8 @@
   .anareq-toast-wrap,
   .anareq-toast-icon,
   .anareq-soft-pop,
+  .anareq-nav-active-bar,
+  .anareq-mobile-nav-dot,
   [class*="animate-"] {
     animation: none !important;
   }
@@ -103,7 +124,22 @@
   .anareq-skeleton-orb,
   .anareq-toast-wrap,
   .anareq-toast-icon,
-  .anareq-soft-pop {
+  .anareq-soft-pop,
+  .anareq-nav-active-bar,
+  .anareq-mobile-nav-dot {
     animation: none !important;
   }
+}
+
+/* Sidebar refinement: keep translucent Tailwind surfaces dark when using slash opacity classes. */
+.anareq-dark .bg-white\/95 {
+  background-color: rgba(12, 10, 9, 0.95) !important;
+}
+
+.anareq-dark .from-white,
+.anareq-dark .via-white,
+.anareq-dark .to-stone-50 {
+  --tw-gradient-from: #1c1917 var(--tw-gradient-from-position) !important;
+  --tw-gradient-via: #1c1917 var(--tw-gradient-via-position) !important;
+  --tw-gradient-to: #292524 var(--tw-gradient-to-position) !important;
 }

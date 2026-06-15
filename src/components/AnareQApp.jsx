@@ -71,6 +71,7 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
 
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [toastConfig, setToastConfig] = useState({ visible: false, title: '', desc: '' });
   const [glossarySearch, setGlossarySearch] = useState('');
   const [glossaryCategory, setGlossaryCategory] = useState('Todos');
@@ -97,7 +98,7 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
     phone: accountProfile.phone || '',
     businessName: accountProfile.businessName || '',
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(profileDisplayName)}&background=ea580c&color=fff&size=128`,
-    plan: languageCode === 'en' ? 'PRO Plan' : languageCode === 'pt' ? 'Plano PRO' : 'Plan PRO',
+    plan: languageCode === 'en' ? 'Beta access' : languageCode === 'pt' ? 'Acesso beta' : 'Acceso beta',
   };
 
   // --- SESIÓN REAL CON FIREBASE AUTH ---
@@ -315,6 +316,7 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const money = (value, digits = 0) => formatCurrency(value, currencyCode, languageCode, digits);
   const localizeCurrencyText = (value) => replaceCurrencySymbol(value, currencyCode);
   const locale = LANGUAGE_LOCALES[languageCode] || LANGUAGE_LOCALES.es;
+  const accountStatusLabel = languageCode === 'en' ? 'Account status' : languageCode === 'pt' ? 'Estado da conta' : 'Estado de cuenta';
 
   const handleCloseToast = useCallback(() => {
     setToastConfig(prev => ({ ...prev, visible: false }));
@@ -1644,6 +1646,36 @@ const restoreActiveAuditAfterHistoryRead = () => {
     );
   }
 
+  const navigationItems = [
+    {
+      id: 'new',
+      label: t('navNew'),
+      Icon: PlusCircle,
+      onSelect: () => {
+        setActiveTab('new');
+        resetForm();
+      }
+    },
+    {
+      id: 'history',
+      label: t('navHistory'),
+      Icon: History,
+      onSelect: () => setActiveTab('history')
+    },
+    {
+      id: 'glossary',
+      label: t('navGlossary'),
+      Icon: BookOpen,
+      onSelect: () => setActiveTab('glossary')
+    }
+  ];
+
+  const isNavigationItemActive = (itemId) => (
+    itemId === 'history'
+      ? ['history', 'view-report'].includes(activeTab)
+      : activeTab === itemId
+  );
+
   const PIE_COLORS = ['#1c1917', '#ea580c']; 
 
   return (
@@ -1705,7 +1737,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
       {legalLoaded && !legalAccepted && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/70 p-4 backdrop-blur-sm no-print"><div className="w-full max-w-lg rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl"><div className="flex items-start gap-3"><ShieldCheck className="h-7 w-7 shrink-0 text-orange-600"/><div><h2 className="text-xl font-black text-stone-900">{t('legalTitle')}</h2><p className="mt-2 text-sm font-medium leading-relaxed text-stone-600">{t('legalDesc')}</p></div></div><label className="mt-5 flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4"><input type="checkbox" checked={legalCheckbox} onChange={(e)=>setLegalCheckbox(e.target.checked)} className="mt-1"/><span className="text-xs font-bold leading-relaxed text-stone-700">{t('legalCheckbox')}</span></label><p className="mt-3 text-[10px] font-bold leading-relaxed text-stone-400">{t('legalDraftNotice')}</p><button type="button" onClick={handleAcceptLegal} disabled={!legalCheckbox} className="mt-5 w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-40">{t('legalAccept')}</button></div></div>}
       {showScoreExplanation && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-stone-950/70 p-4 backdrop-blur-sm no-print"><div className="w-full max-w-xl rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-widest text-orange-600">anareQ</p><h2 className="mt-1 text-xl font-black text-stone-900">{t('scoreExplanationTitle')}</h2></div><button type="button" onClick={()=>setShowScoreExplanation(false)} className="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"><XCircle className="h-6 w-6"/></button></div><p className="mt-4 text-sm font-medium leading-relaxed text-stone-600">{t('scoreExplanationBody')}</p><div className="mt-4 grid gap-2 sm:grid-cols-2">{[t('scoreWeightAds'),t('scoreWeightSales'),t('scoreWeightMargin'),t('scoreWeightStability')].map(item=><div key={item} className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs font-black text-stone-700">{item}</div>)}</div><button type="button" onClick={()=>setShowScoreExplanation(false)} className="mt-5 w-full rounded-xl bg-stone-900 px-4 py-3 text-sm font-black text-white hover:bg-black">{t('close')}</button></div></div>}
 
-      <nav className="bg-white border-b border-stone-200 sticky top-0 z-50 shadow-sm relative no-print">
+      <nav className={`sticky top-0 z-50 border-b shadow-sm relative no-print ${isDarkMode ? 'border-stone-800 bg-stone-950/95 shadow-black/20' : 'border-stone-200 bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <button type="button" onClick={() => {
@@ -1732,7 +1764,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
                     <div><p className="font-black text-stone-900">{userData.name}</p><p className="text-xs text-stone-500 font-medium">{userData.email}</p></div>
                   </div>
                   <div className="p-4 bg-stone-50">
-                    <div className="flex justify-between items-center mb-3"><span className="text-xs font-bold text-stone-500 uppercase tracking-wider">{t('plan')}</span><span className="text-xs font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-md flex items-center gap-1"><Star className="w-3 h-3 fill-orange-600" /> {userData.plan}</span></div>
+                    <div className="flex justify-between items-center mb-3"><span className="text-xs font-bold text-stone-500 uppercase tracking-wider">{accountStatusLabel}</span><span className="text-xs font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-md flex items-center gap-1"><Star className="w-3 h-3 fill-orange-600" /> {userData.plan}</span></div>
                     <div className="flex justify-between items-center"><span className="text-xs font-bold text-stone-500 uppercase tracking-wider">{t('audits')}</span><span className="text-sm font-black text-stone-900">{history.length} / ∞</span></div>
                   </div>
                   <div className="p-4 border-t border-stone-100 space-y-3">
@@ -1787,39 +1819,131 @@ const restoreActiveAuditAfterHistoryRead = () => {
         </div>
       </nav>
 
-      <aside className="hidden lg:flex fixed left-0 top-16 bottom-0 z-40 w-64 flex-col border-r border-stone-200 bg-white px-4 py-5 no-print">
-        <div className="px-2 pb-4 border-b border-stone-100">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">anareQ</p>
-          <p className="mt-1 text-sm font-black text-stone-900">{t('businessIntel')}</p>
+      <aside className={`hidden lg:flex fixed left-0 top-16 bottom-0 z-40 flex-col border-r px-3 py-5 shadow-[8px_0_30px_rgba(28,25,23,0.035)] backdrop-blur-xl no-print transition-[width,background-color,border-color] duration-300 ${
+        isSidebarCollapsed ? 'w-20' : 'w-64'
+      } ${
+        isDarkMode
+          ? 'border-stone-800 bg-stone-950/95 shadow-black/20'
+          : 'border-stone-200/80 bg-white/95'
+      }`}>
+        <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isSidebarCollapsed && (
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-orange-600">anareQ</p>
+              <p className="mt-0.5 truncate text-xs font-black text-stone-500">{t('businessIntel')}</p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(prev => !prev)}
+            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white text-stone-500 shadow-sm transition-all duration-300 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400/30"
+            aria-label={isSidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}
+            title={isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'}
+          >
+            <ArrowLeft className={`h-4 w-4 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
+          </button>
         </div>
+
+        {!isSidebarCollapsed && (
+          <div className={`mt-4 rounded-2xl border px-4 py-4 shadow-sm ${isDarkMode ? 'border-stone-800 bg-stone-900/80' : 'border-stone-100 bg-gradient-to-b from-white to-stone-50'}`}>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-stone-400">anareQ</p>
+            <p className="mt-1 text-sm font-black text-stone-900">{t('businessIntel')}</p>
+            <p className="mt-2 text-[11px] font-bold leading-relaxed text-stone-500">{t('diagnosisTitle')}</p>
+          </div>
+        )}
+
         <div className="mt-5 space-y-2">
-          <button onClick={() => { setActiveTab('new'); resetForm(); }} className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-black transition ${activeTab === 'new' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'text-stone-600 hover:bg-stone-100'}`}><PlusCircle className="w-4 h-4" /> {t('navNew')}</button>
-          <button onClick={() => setActiveTab('history')} className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-black transition ${activeTab === 'history' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'text-stone-600 hover:bg-stone-100'}`}><History className="w-4 h-4" /> {t('navHistory')}</button>
-          <button onClick={() => setActiveTab('glossary')} className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-black transition ${activeTab === 'glossary' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'text-stone-600 hover:bg-stone-100'}`}><BookOpen className="w-4 h-4" /> {t('navGlossary')}</button>
+          {navigationItems.map(({ id, label, Icon, onSelect }) => {
+            const isActive = isNavigationItemActive(id);
+
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={onSelect}
+                aria-current={isActive ? 'page' : undefined}
+                title={isSidebarCollapsed ? label : undefined}
+                className={`group relative w-full overflow-hidden rounded-2xl border text-sm font-black transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 ${
+                  isSidebarCollapsed ? 'flex justify-center px-2 py-3' : 'px-3 py-3 text-left'
+                } ${
+                  isActive
+                    ? 'border-orange-100 bg-orange-50 text-orange-700 shadow-sm'
+                    : 'border-transparent text-stone-600 hover:border-stone-200 hover:bg-stone-100/80 hover:text-stone-900'
+                }`}
+              >
+                {isActive && <span className="anareq-nav-active-bar absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-orange-500" />}
+                <span className={`relative flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-300 ${
+                    isActive
+                      ? 'bg-white text-orange-600 shadow-sm ring-1 ring-orange-100'
+                      : 'bg-stone-50 text-stone-500 group-hover:bg-white group-hover:text-orange-600 group-hover:shadow-sm'
+                  }`}>
+                    <Icon className={`h-4 w-4 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                  </span>
+                  {!isSidebarCollapsed && <span className="min-w-0 flex-1 truncate">{label}</span>}
+                  {!isSidebarCollapsed && (
+                    <span className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                      isActive ? 'bg-orange-500 opacity-100' : 'bg-stone-300 opacity-0 group-hover:opacity-100'
+                    }`} />
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <div className="mt-auto rounded-2xl border border-orange-100 bg-orange-50 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">{t('plan')}</p>
-          <p className="mt-1 text-sm font-black text-stone-900">{userData.plan}</p>
-          <p className="mt-1 text-[11px] font-bold text-stone-500">{userData.email}</p>
-        </div>
+
+        {!isSidebarCollapsed && (
+          <div className={`mt-auto overflow-hidden rounded-3xl border p-4 shadow-sm ${isDarkMode ? 'border-stone-800 bg-stone-900/80' : 'border-orange-100 bg-gradient-to-br from-orange-50 via-white to-stone-50'}`}>
+            <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">{accountStatusLabel}</p>
+            <p className="mt-1 text-sm font-black text-stone-900">{userData.plan}</p>
+            <p className="mt-1 truncate text-[11px] font-bold text-stone-500">{userData.email}</p>
+          </div>
+        )}
+
+        {isSidebarCollapsed && (
+          <div className="mt-auto flex justify-center">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-2xl border text-orange-600 shadow-sm ${isDarkMode ? 'border-stone-800 bg-stone-900/80' : 'border-orange-100 bg-orange-50'}`} title={userData.plan}>
+              <Star className="h-4 w-4" />
+            </div>
+          </div>
+        )}
       </aside>
 
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-[100vw] overflow-hidden box-border z-50 border-t backdrop-blur px-2 py-2 no-print ${isDarkMode ? 'border-stone-700 bg-stone-900/95' : 'border-stone-200 bg-white/95'}`}>
         <div className="grid w-full min-w-0 grid-cols-3 gap-1">
-          <button onClick={() => { setActiveTab('new'); resetForm(); }} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'new' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><PlusCircle className="w-4 h-4" />{t('navNew')}</button>
-          <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'history' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><History className="w-4 h-4" />{t('navHistory')}</button>
-          <button onClick={() => setActiveTab('glossary')} className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${activeTab === 'glossary' ? 'bg-orange-50 text-orange-700' : 'text-stone-500'}`}><BookOpen className="w-4 h-4" />{t('navGlossary')}</button>
+          {navigationItems.map(({ id, label, Icon, onSelect }) => {
+            const isActive = isNavigationItemActive(id);
+
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={onSelect}
+                aria-current={isActive ? 'page' : undefined}
+                className={`group relative flex min-w-0 flex-col items-center gap-1 rounded-2xl border px-2 py-2 text-[10px] font-black transition-all duration-300 ${
+                  isActive
+                    ? 'border-orange-100 bg-orange-50 text-orange-700 shadow-sm'
+                    : 'border-transparent text-stone-500 hover:bg-stone-100 hover:text-stone-700'
+                }`}
+              >
+                {isActive && <span className="anareq-mobile-nav-dot absolute top-1 h-1 w-6 rounded-full bg-orange-500" />}
+                <Icon className={`mt-1 h-4 w-4 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                <span className="max-w-full truncate">{label}</span>
+              </button>
+            );
+          })}
         </div>
       </nav>
 
-      <main className="lg:ml-64 min-w-0 max-w-full overflow-x-hidden px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 lg:pb-8 relative z-10 min-h-[calc(100vh-4rem)] print:py-0 print:px-0 print:ml-0">
+      <main className={`min-w-0 max-w-full overflow-x-hidden px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 lg:pb-8 relative z-10 min-h-[calc(100vh-4rem)] print:py-0 print:px-0 print:ml-0 transition-[margin-left] duration-300 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         
         <datalist id="clients-list">
           {uniqueClients.map(c => <option key={c} value={c} />)}
         </datalist>
 
         {['new', 'view-report'].includes(activeTab) && (
-          <div className="flex flex-col gap-6 sm:gap-8 print-full">
+          <div className="anareq-panel-enter flex flex-col gap-6 sm:gap-8 print-full">
             
             {/* FORMULARIO IZQUIERDO */}
             {activeTab === 'new' && (
@@ -2899,7 +3023,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
 
         {/* HISTORIAL */}
         {activeTab === 'history' && (
-          <div className="max-w-6xl mx-auto animate-[fadeIn_0.3s_ease-out] no-print">
+          <div className="anareq-panel-enter max-w-6xl mx-auto no-print">
             
             {results && (
               <div className="mb-6">
@@ -3078,7 +3202,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
 
         {/* GLOSARIO EDUCATIVO */}
         {activeTab === 'glossary' && (
-          <div className="max-w-6xl mx-auto animate-[fadeIn_0.3s_ease-out] no-print">
+          <div className="anareq-panel-enter max-w-6xl mx-auto no-print">
             <div className="bg-white rounded-3xl shadow-sm border border-stone-200 overflow-hidden">
               <div className="p-6 sm:p-8 border-b border-stone-100 bg-gradient-to-br from-stone-900 to-stone-800 text-white">
                 <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">

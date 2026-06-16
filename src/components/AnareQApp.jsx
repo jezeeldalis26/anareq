@@ -19,10 +19,10 @@ import { Toast } from './common/Toast';
 import { AnareQLogo } from './common/AnareQLogo';
 import { LEGAL_DOCUMENT_VERSION, getLegalCopy, getLegalDocumentList, getLegalDocument } from '../constants/legalDocuments';
 
-function AnareQApp() {
+function AnareQApp({ initialAuthMode = 'signin', routePath = '/app', navigate } = {}) {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authMode, setAuthMode] = useState('signin');
+  const [authMode, setAuthMode] = useState(initialAuthMode);
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
@@ -275,6 +275,23 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
       window.removeEventListener('appinstalled', onAppInstalled);
     };
   }, [isDarkMode]);
+
+  // Sincroniza /login y /registro con el modo visual del formulario sin instalar router adicional.
+  useEffect(() => {
+    if (!currentUser) {
+      setAuthMode(initialAuthMode === 'signup' ? 'signup' : 'signin');
+      setAuthError('');
+      setAuthNotice('');
+      setLegalCheckbox(false);
+    }
+  }, [initialAuthMode, currentUser]);
+
+  // Cuando el usuario entra desde /login o /registro, lo mueve a /app sin recargar la SPA.
+  useEffect(() => {
+    if (!authLoading && currentUser && routePath !== '/app') {
+      navigate?.('/app');
+    }
+  }, [authLoading, currentUser, routePath, navigate]);
 
   // Mantiene el fondo del documento sincronizado con el modo oscuro para evitar espacios blancos fuera del contenedor React.
   useEffect(() => {
@@ -660,6 +677,7 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
     setShowUserMenu(false);
     try {
       await signOut();
+      navigate?.('/login');
     } catch (error) {
       console.error('Sign out failed:', error);
     }
@@ -1811,14 +1829,13 @@ const restoreActiveAuditAfterHistoryRead = () => {
             <div className="mt-4 flex flex-col gap-3 text-center">
               {authMode === 'signin' && <button type="button" onClick={handlePasswordReset} disabled={isAuthSubmitting} className="text-xs font-bold text-stone-500 hover:text-orange-600 disabled:opacity-50">{t('forgotPassword')}</button>}
               <button type="button" onClick={() => {
-                setAuthMode(prev => {
-                  const nextMode = prev === 'signin' ? 'signup' : 'signin';
-                  if (nextMode === 'signup') setSignupProfile({ name: '', phone: '', businessName: '' });
-                  return nextMode;
-                });
+                const nextMode = authMode === 'signin' ? 'signup' : 'signin';
+                if (nextMode === 'signup') setSignupProfile({ name: '', phone: '', businessName: '' });
+                setAuthMode(nextMode);
                 setAuthError('');
                 setAuthNotice('');
                 setLegalCheckbox(false);
+                navigate?.(nextMode === 'signup' ? '/registro' : '/login');
               }} className="text-xs font-black text-orange-600 hover:text-orange-700">
                 {authMode === 'signin' ? `${t('noAccount')} ${t('createAccount')}` : `${t('alreadyAccount')} ${t('signIn')}`}
               </button>
@@ -3898,10 +3915,10 @@ class AnareQAppErrorBoundary extends React.Component {
   }
 }
 
-export default function AnareQApplication() {
+export default function AnareQApplication(props) {
   return (
     <AnareQAppErrorBoundary>
-      <AnareQApp />
+      <AnareQApp {...props} />
     </AnareQAppErrorBoundary>
   );
 }

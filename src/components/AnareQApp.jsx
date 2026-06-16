@@ -17,6 +17,7 @@ import { MetricDelta } from './common/MetricDelta';
 import { DashboardSkeleton } from './common/DashboardSkeleton';
 import { Toast } from './common/Toast';
 import { AnareQLogo } from './common/AnareQLogo';
+import { LEGAL_DOCUMENT_VERSION, getLegalCopy, getLegalDocumentList, getLegalDocument } from '../constants/legalDocuments';
 
 function AnareQApp() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -38,6 +39,12 @@ function AnareQApp() {
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [legalLoaded, setLegalLoaded] = useState(false);
   const [legalCheckbox, setLegalCheckbox] = useState(false);
+  const [activeLegalDocumentKey, setActiveLegalDocumentKey] = useState(null);
+  const [signupProfile, setSignupProfile] = useState({
+    name: '',
+    phone: '',
+    businessName: ''
+  });
   
   const [activeTab, setActiveTab] = useState('new'); 
   const [clientName, setClientName] = useState('');
@@ -317,6 +324,98 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const localizeCurrencyText = (value) => replaceCurrencySymbol(value, currencyCode);
   const locale = LANGUAGE_LOCALES[languageCode] || LANGUAGE_LOCALES.es;
   const accountStatusLabel = languageCode === 'en' ? 'Account status' : languageCode === 'pt' ? 'Estado da conta' : 'Estado de cuenta';
+  const signupPlaceholders = languageCode === 'en'
+    ? { name: 'Full name', businessName: 'Business or project', phone: 'Phone or WhatsApp' }
+    : languageCode === 'pt'
+      ? { name: 'Nome completo', businessName: 'Marca ou negócio', phone: 'Telefone ou WhatsApp' }
+      : { name: 'Nombre completo', businessName: 'Marca o negocio', phone: 'Teléfono o WhatsApp' };
+
+  const legalCopy = getLegalCopy(languageCode);
+  const legalDocumentList = getLegalDocumentList(languageCode);
+  const activeLegalDocument = activeLegalDocumentKey
+    ? getLegalDocument(languageCode, activeLegalDocumentKey)
+    : null;
+
+  const openLegalDocument = (documentKey) => setActiveLegalDocumentKey(documentKey);
+  const closeLegalDocument = () => setActiveLegalDocumentKey(null);
+  const buildLegalAcceptance = (source = 'app') => ({
+    termsVersion: LEGAL_DOCUMENT_VERSION,
+    privacyVersion: LEGAL_DOCUMENT_VERSION,
+    cookiesVersion: LEGAL_DOCUMENT_VERSION,
+    refundsVersion: LEGAL_DOCUMENT_VERSION,
+    acceptedAt: new Date().toISOString(),
+    language: languageCode,
+    source,
+    userAgentSummary: navigator.userAgent.slice(0, 180)
+  });
+
+  const LegalDocumentLinks = ({ className = '' } = {}) => (
+    <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-black ${className}`}>
+      {legalDocumentList.map((document, index) => (
+        <React.Fragment key={document.key}>
+          {index > 0 && <span className="text-stone-300">•</span>}
+          <button
+            type="button"
+            onClick={() => openLegalDocument(document.key)}
+            className="rounded text-orange-700 underline decoration-orange-300/70 underline-offset-4 transition hover:text-orange-900 focus:outline-none focus:ring-2 focus:ring-orange-300/40"
+          >
+            {document.button || document.link || document.title}
+          </button>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+
+  const legalDocumentModal = activeLegalDocument && (
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-stone-950/75 p-3 sm:p-4 backdrop-blur-sm no-print">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="legal-document-title"
+        className="flex max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 py-4 sm:px-6">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-600">{legalCopy.labels.modalEyebrow}</p>
+            <h2 id="legal-document-title" className="mt-1 text-lg font-black leading-tight text-stone-900 sm:text-xl">{activeLegalDocument.title}</h2>
+            <p className="mt-1 text-[11px] font-bold text-stone-400">{legalCopy.labels.lastUpdated} · {legalCopy.labels.version}</p>
+          </div>
+          <button
+            type="button"
+            onClick={closeLegalDocument}
+            className="rounded-full p-1.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-800 focus:outline-none focus:ring-2 focus:ring-orange-300/40"
+            aria-label={legalCopy.labels.close}
+          >
+            <XCircle className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto px-5 py-5 sm:px-6">
+          <p className="rounded-2xl border border-orange-100 bg-orange-50 p-4 text-sm font-bold leading-relaxed text-stone-700">
+            {activeLegalDocument.intro}
+          </p>
+          <div className="mt-5 space-y-4">
+            {activeLegalDocument.sections.map((section) => (
+              <section key={section.title} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <h3 className="text-sm font-black text-stone-900">{section.title}</h3>
+                <p className="mt-2 text-sm font-medium leading-6 text-stone-600">{section.body}</p>
+              </section>
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t border-stone-200 bg-white px-5 py-4 sm:px-6">
+          <button
+            type="button"
+            onClick={closeLegalDocument}
+            className="w-full rounded-xl bg-stone-900 px-4 py-3 text-sm font-black text-white transition hover:bg-black focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+          >
+            {legalCopy.labels.close}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   const handleCloseToast = useCallback(() => {
     setToastConfig(prev => ({ ...prev, visible: false }));
@@ -354,16 +453,47 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
     event.preventDefault();
     setAuthError('');
     setAuthNotice('');
-    if (!authEmail.trim() || !authPassword) {
+    const normalizedEmail = authEmail.trim();
+    if (!normalizedEmail || !authPassword) {
       setAuthError(t('authRequired'));
       return;
     }
+
+    const normalizedSignupProfile = {
+      name: signupProfile.name.trim(),
+      email: normalizedEmail,
+      phone: signupProfile.phone.trim(),
+      businessName: signupProfile.businessName.trim()
+    };
+
+    if (authMode === 'signup') {
+      if (!normalizedSignupProfile.name) { setAuthError(t('authRequired')); return; }
+      if (!legalCheckbox) { setAuthError(t('legalRequired')); return; }
+    }
+
     setIsAuthSubmitting(true);
     try {
       if (authMode === 'signup') {
-        if (!legalCheckbox) { setAuthError(t('legalRequired')); return; }
-        await createAccountWithEmail(authEmail.trim(), authPassword);
-      } else await signInWithEmail(authEmail.trim(), authPassword);
+        const credential = await createAccountWithEmail(normalizedEmail, authPassword);
+        const uid = credential?.user?.uid;
+        if (uid) {
+          const acceptance = buildLegalAcceptance('signup');
+          const initialProfile = {
+            ...normalizedSignupProfile,
+            name: normalizedSignupProfile.name || normalizedEmail.split('@')[0]
+          };
+          await setDoc(doc(db, 'users', uid), {
+            profile: initialProfile,
+            preferences: { currencyCode, languageCode },
+            legalAcceptance: acceptance,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+          try { localStorage.setItem(`anareqProfile:${uid}`, JSON.stringify(initialProfile)); } catch (error) { /* respaldo local opcional */ }
+          setAccountProfile(initialProfile);
+          setLegalAccepted(true);
+          setLegalLoaded(true);
+        }
+      } else await signInWithEmail(normalizedEmail, authPassword);
     } catch (error) {
       console.error('Email authentication failed:', error);
       setAuthError(getAuthErrorMessage(error));
@@ -412,7 +542,7 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
 
   const handleAcceptLegal = async () => {
     if (!currentUser?.uid || !legalCheckbox) return;
-    const acceptance = { termsVersion: '1.0-beta', privacyVersion: '1.0-beta', refundsVersion: '1.0-beta', acceptedAt: new Date().toISOString(), language: languageCode, source: 'app', userAgentSummary: navigator.userAgent.slice(0, 180) };
+    const acceptance = buildLegalAcceptance('app');
     try { await setDoc(doc(db, 'users', currentUser.uid), { legalAcceptance: acceptance, updatedAt: new Date().toISOString() }, { merge: true }); setLegalAccepted(true); }
     catch (error) { console.error('Could not save legal acceptance:', error); showToastMessage(t('warning'), t('cloudSyncFailedDesc')); }
   };
@@ -1587,19 +1717,28 @@ const restoreActiveAuditAfterHistoryRead = () => {
           <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
           <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-stone-900/10 blur-3xl" />
         </div>
-        <div className="relative w-full max-w-5xl overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-2xl grid lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="hidden lg:block bg-stone-950 relative overflow-hidden">
-            <img
-              src="/imagen-logeo.png"
-              alt="anareQ · Analiza antes de escalar"
-              className="absolute inset-0 h-full w-full object-cover object-center"
-            />
-          </section>
+        {legalDocumentModal}
+        <div className={`relative w-full overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-2xl ${
+          authMode === 'signup'
+            ? 'max-w-xl'
+            : 'max-w-5xl grid lg:grid-cols-[1.05fr_0.95fr]'
+        }`}>
+          {authMode === 'signin' && (
+            <section className="hidden lg:block bg-stone-950 relative overflow-hidden">
+              <img
+                src="/imagen-logeo.png"
+                alt="anareQ · Analiza antes de escalar"
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+            </section>
+          )}
 
-          <section className="p-5 sm:p-8 lg:p-12 bg-white">
-            <div className="lg:hidden mb-5 overflow-hidden rounded-2xl border border-stone-200 shadow-sm">
-              <img src="/imagen-logeo.png" alt="anareQ · Analiza antes de escalar" className="h-32 sm:h-44 w-full object-cover object-center" />
-            </div>
+          <section className={authMode === 'signup' ? 'p-5 sm:p-8 lg:p-10 bg-white' : 'p-5 sm:p-8 lg:p-12 bg-white'}>
+            {authMode === 'signin' && (
+              <div className="lg:hidden mb-5 overflow-hidden rounded-2xl border border-stone-200 shadow-sm">
+                <img src="/imagen-logeo.png" alt="anareQ · Analiza antes de escalar" className="h-32 sm:h-44 w-full object-cover object-center" />
+              </div>
+            )}
             <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-600">anareQ</p>
             <h1 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-stone-900">{t('authWelcome')}</h1>
 
@@ -1612,8 +1751,54 @@ const restoreActiveAuditAfterHistoryRead = () => {
                 <span className="text-[11px] font-black uppercase tracking-wider text-stone-500">{t('password')}</span>
                 <input type="password" autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="••••••••" className="mt-1.5 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3.5 text-sm font-bold text-stone-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
               </label>
+              {authMode === 'signup' && (
+                <div className="space-y-4 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-600">{legalCopy.labels.signupSectionTitle}</p>
+                    <p className="mt-1 text-[11px] font-bold leading-relaxed text-stone-500">{legalCopy.labels.signupSectionDesc}</p>
+                  </div>
 
-              {authMode === 'signup' && <label className="flex items-start gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3"><input type="checkbox" checked={legalCheckbox} onChange={(e)=>setLegalCheckbox(e.target.checked)} className="mt-0.5"/><span className="text-[11px] font-bold leading-relaxed text-stone-600">{t('legalCheckbox')}</span></label>}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block sm:col-span-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-stone-500">{t('profileName')}</span>
+                      <input value={signupProfile.name} onChange={(e) => setSignupProfile(prev => ({ ...prev, name: e.target.value }))} autoComplete="name" placeholder={signupPlaceholders.name} className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+                    </label>
+                    <label className="block">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-stone-500">{t('profileBusiness')}</span>
+                      <input value={signupProfile.businessName} onChange={(e) => setSignupProfile(prev => ({ ...prev, businessName: e.target.value }))} placeholder={signupPlaceholders.businessName} className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+                    </label>
+                    <label className="block">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-stone-500">{t('profilePhone')}</span>
+                      <input value={signupProfile.phone} onChange={(e) => setSignupProfile(prev => ({ ...prev, phone: e.target.value }))} autoComplete="tel" placeholder={signupPlaceholders.phone} className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+                    </label>
+                    <label className="block">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-stone-500">{t('currency')}</span>
+                      <select value={currencyCode} onChange={handleCurrencyChange} className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100">
+                        {CURRENCY_OPTIONS.map(option => <option key={option.code} value={option.code}>{option.symbol} · {option.label}</option>)}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-stone-500">{t('language')}</span>
+                      <select value={languageCode} onChange={handleLanguageChange} className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100">
+                        {LANGUAGE_OPTIONS.map(option => <option key={option.code} value={option.code}>{option.label}</option>)}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="rounded-xl border border-stone-200 bg-white p-3">
+                    <div className="mb-3 rounded-xl border border-orange-100 bg-orange-50/70 px-3 py-2">
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-700">
+                        {languageCode === 'en' ? 'Legal documents' : languageCode === 'pt' ? 'Documentos legais' : 'Documentos legales'}
+                      </p>
+                      <LegalDocumentLinks className="mt-2" />
+                    </div>
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" checked={legalCheckbox} onChange={(e)=>setLegalCheckbox(e.target.checked)} className="mt-0.5"/>
+                      <span className="text-[11px] font-bold leading-relaxed text-stone-600">{legalCopy.labels.acceptanceCheckbox}</span>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               {authError && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold leading-relaxed text-red-700">{authError}</div>}
               {authNotice && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-xs font-bold leading-relaxed text-green-700">{authNotice}</div>}
@@ -1625,7 +1810,16 @@ const restoreActiveAuditAfterHistoryRead = () => {
 
             <div className="mt-4 flex flex-col gap-3 text-center">
               {authMode === 'signin' && <button type="button" onClick={handlePasswordReset} disabled={isAuthSubmitting} className="text-xs font-bold text-stone-500 hover:text-orange-600 disabled:opacity-50">{t('forgotPassword')}</button>}
-              <button type="button" onClick={() => { setAuthMode(prev => prev === 'signin' ? 'signup' : 'signin'); setAuthError(''); setAuthNotice(''); }} className="text-xs font-black text-orange-600 hover:text-orange-700">
+              <button type="button" onClick={() => {
+                setAuthMode(prev => {
+                  const nextMode = prev === 'signin' ? 'signup' : 'signin';
+                  if (nextMode === 'signup') setSignupProfile({ name: '', phone: '', businessName: '' });
+                  return nextMode;
+                });
+                setAuthError('');
+                setAuthNotice('');
+                setLegalCheckbox(false);
+              }} className="text-xs font-black text-orange-600 hover:text-orange-700">
                 {authMode === 'signin' ? `${t('noAccount')} ${t('createAccount')}` : `${t('alreadyAccount')} ${t('signIn')}`}
               </button>
             </div>
@@ -1681,6 +1875,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
   return (
     <div className={`min-h-screen font-sans selection:bg-orange-200 selection:text-orange-900 relative ${isDarkMode ? 'anareq-dark bg-stone-950 text-stone-100' : 'bg-[#f4f2f0] text-stone-800'}`}>
       <Toast visible={toastConfig.visible} message={toastConfig} onClose={handleCloseToast} />
+      {legalDocumentModal}
       {auditPendingDelete && (
   <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 px-4">
     <div
@@ -1734,7 +1929,33 @@ const restoreActiveAuditAfterHistoryRead = () => {
     </div>
   </div>
 )}
-      {legalLoaded && !legalAccepted && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/70 p-4 backdrop-blur-sm no-print"><div className="w-full max-w-lg rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl"><div className="flex items-start gap-3"><ShieldCheck className="h-7 w-7 shrink-0 text-orange-600"/><div><h2 className="text-xl font-black text-stone-900">{t('legalTitle')}</h2><p className="mt-2 text-sm font-medium leading-relaxed text-stone-600">{t('legalDesc')}</p></div></div><label className="mt-5 flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4"><input type="checkbox" checked={legalCheckbox} onChange={(e)=>setLegalCheckbox(e.target.checked)} className="mt-1"/><span className="text-xs font-bold leading-relaxed text-stone-700">{t('legalCheckbox')}</span></label><p className="mt-3 text-[10px] font-bold leading-relaxed text-stone-400">{t('legalDraftNotice')}</p><button type="button" onClick={handleAcceptLegal} disabled={!legalCheckbox} className="mt-5 w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-40">{t('legalAccept')}</button></div></div>}
+      {legalLoaded && !legalAccepted && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/70 p-4 backdrop-blur-sm no-print">
+          <div className="w-full max-w-2xl rounded-3xl border border-stone-200 bg-white p-5 shadow-2xl sm:p-6">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="h-7 w-7 shrink-0 text-orange-600"/>
+              <div>
+                <h2 className="text-xl font-black text-stone-900">{t('legalTitle')}</h2>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-stone-600">{t('legalDesc')}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-600">anareQ · Legal</p>
+              <p className="mt-2 text-sm font-bold leading-relaxed text-stone-700">{legalCopy.labels.acceptanceShort}</p>
+              <LegalDocumentLinks className="mt-3" />
+            </div>
+
+            <label className="mt-5 flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4">
+              <input type="checkbox" checked={legalCheckbox} onChange={(e)=>setLegalCheckbox(e.target.checked)} className="mt-1"/>
+              <span className="text-xs font-bold leading-relaxed text-stone-700">{legalCopy.labels.acceptanceCheckbox}</span>
+            </label>
+            <button type="button" onClick={handleAcceptLegal} disabled={!legalCheckbox} className="mt-5 w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-40">
+              {t('legalAccept')}
+            </button>
+          </div>
+        </div>
+      )}
       {showScoreExplanation && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-stone-950/70 p-4 backdrop-blur-sm no-print"><div className="w-full max-w-xl rounded-3xl border border-stone-200 bg-white p-6 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-widest text-orange-600">anareQ</p><h2 className="mt-1 text-xl font-black text-stone-900">{t('scoreExplanationTitle')}</h2></div><button type="button" onClick={()=>setShowScoreExplanation(false)} className="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"><XCircle className="h-6 w-6"/></button></div><p className="mt-4 text-sm font-medium leading-relaxed text-stone-600">{t('scoreExplanationBody')}</p><div className="mt-4 grid gap-2 sm:grid-cols-2">{[t('scoreWeightAds'),t('scoreWeightSales'),t('scoreWeightMargin'),t('scoreWeightStability')].map(item=><div key={item} className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs font-black text-stone-700">{item}</div>)}</div><button type="button" onClick={()=>setShowScoreExplanation(false)} className="mt-5 w-full rounded-xl bg-stone-900 px-4 py-3 text-sm font-black text-white hover:bg-black">{t('close')}</button></div></div>}
 
       <nav className={`sticky top-0 z-50 border-b shadow-sm relative no-print ${isDarkMode ? 'border-stone-800 bg-stone-950/95 shadow-black/20' : 'border-stone-200 bg-white'}`}>

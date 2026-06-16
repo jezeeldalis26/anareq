@@ -383,6 +383,23 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
       ? { name: 'Nome completo', businessName: 'Marca ou negócio', phone: 'Telefone ou WhatsApp' }
       : { name: 'Nombre completo', businessName: 'Marca o negocio', phone: 'Teléfono o WhatsApp' };
 
+  const backToLandingLabel = languageCode === 'en'
+    ? 'Back to homepage'
+    : languageCode === 'pt'
+      ? 'Voltar ao início'
+      : 'Volver al inicio';
+
+  const handleBackToLanding = () => {
+    setAuthError('');
+    setAuthNotice('');
+    if (typeof navigate === 'function') {
+      navigate('/');
+      return;
+    }
+    window.history.pushState({}, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   const legalCopy = getLegalCopy(languageCode);
   const legalDocumentList = getLegalDocumentList(languageCode);
   const activeLegalDocument = activeLegalDocumentKey
@@ -1788,6 +1805,14 @@ const restoreActiveAuditAfterHistoryRead = () => {
           )}
 
           <section className={authMode === 'signup' ? 'p-5 sm:p-8 lg:p-10 bg-white' : 'p-5 sm:p-8 lg:p-12 bg-white'}>
+            <button
+              type="button"
+              onClick={handleBackToLanding}
+              className="mb-5 inline-flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-stone-600 shadow-sm transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700 focus:outline-none focus:ring-4 focus:ring-orange-100"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {backToLandingLabel}
+            </button>
             {authMode === 'signin' && (
               <div className="lg:hidden mb-5 overflow-hidden rounded-2xl border border-stone-200 shadow-sm">
                 <img src="/imagen-logeo.png" alt="anareQ · Analiza antes de escalar" className="h-32 sm:h-44 w-full object-cover object-center" />

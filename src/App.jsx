@@ -48,6 +48,37 @@ const LANGUAGES = [
   { code: 'en', label: 'EN', name: 'English' },
 ];
 
+const normalizeLandingLanguageCode = (value) => {
+  const lang = String(value || '').trim().toLowerCase();
+  if (!lang) return '';
+  if (lang.startsWith('pt')) return 'pt';
+  if (lang.startsWith('en')) return 'en';
+  if (lang.startsWith('es')) return 'es';
+  return '';
+};
+
+const detectPreferredLandingLanguage = () => {
+  try {
+    const saved = localStorage.getItem('anareqLanguage');
+    const normalizedSaved = normalizeLandingLanguageCode(saved);
+    if (normalizedSaved) return normalizedSaved;
+  } catch (error) {
+    // localStorage may be unavailable in restricted browsers.
+  }
+
+  const browserLanguages = [
+    ...(typeof navigator !== 'undefined' && Array.isArray(navigator.languages) ? navigator.languages : []),
+    typeof navigator !== 'undefined' ? navigator.language : '',
+  ];
+
+  for (const language of browserLanguages) {
+    const normalized = normalizeLandingLanguageCode(language);
+    if (normalized) return normalized;
+  }
+
+  return 'es';
+};
+
 const LANDING_COPY = {
   es: {
     nav: {
@@ -563,16 +594,13 @@ function LandingImage({ srcs, alt, className = '', imgClassName = '', loading = 
 }
 
 function LandingPage({ navigate }) {
-  const [landingLanguage, setLandingLanguage] = useState(() => {
-    try {
-      const saved = localStorage.getItem('anareqLanguage');
-      return LANDING_COPY[saved] ? saved : 'es';
-    } catch (error) {
-      return 'es';
-    }
-  });
+  const [landingLanguage, setLandingLanguage] = useState(() => detectPreferredLandingLanguage());
 
   const copy = LANDING_COPY[landingLanguage] || LANDING_COPY.es;
+
+  useEffect(() => {
+    document.documentElement.lang = landingLanguage;
+  }, [landingLanguage]);
 
   const handleNavigate = (event, path) => {
     event.preventDefault();

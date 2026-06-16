@@ -19,6 +19,37 @@ import { Toast } from './common/Toast';
 import { AnareQLogo } from './common/AnareQLogo';
 import { LEGAL_DOCUMENT_VERSION, getLegalCopy, getLegalDocumentList, getLegalDocument } from '../constants/legalDocuments';
 
+const normalizeAppLanguageCode = (value) => {
+  const lang = String(value || '').trim().toLowerCase();
+  if (!lang) return '';
+  if (lang.startsWith('pt')) return 'pt';
+  if (lang.startsWith('en')) return 'en';
+  if (lang.startsWith('es')) return 'es';
+  return '';
+};
+
+const detectPreferredAppLanguage = () => {
+  try {
+    const saved = localStorage.getItem('anareqLanguage');
+    const normalizedSaved = normalizeAppLanguageCode(saved);
+    if (normalizedSaved) return normalizedSaved;
+  } catch (error) {
+    // localStorage may be unavailable in restricted browsers.
+  }
+
+  const browserLanguages = [
+    ...(typeof navigator !== 'undefined' && Array.isArray(navigator.languages) ? navigator.languages : []),
+    typeof navigator !== 'undefined' ? navigator.language : '',
+  ];
+
+  for (const language of browserLanguages) {
+    const normalized = normalizeAppLanguageCode(language);
+    if (normalized) return normalized;
+  }
+
+  return 'es';
+};
+
 function AnareQApp({ initialAuthMode = 'signin', routePath = '/app', navigate } = {}) {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -84,7 +115,7 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const [glossaryCategory, setGlossaryCategory] = useState('Todos');
   const [expandedGlossaryTerms, setExpandedGlossaryTerms] = useState({});
   const [currencyCode, setCurrencyCode] = useState('USD');
-  const [languageCode, setLanguageCode] = useState('es');
+  const [languageCode, setLanguageCode] = useState(() => detectPreferredAppLanguage());
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [accountProfile, setAccountProfile] = useState({
     name: '',
@@ -234,6 +265,10 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
       // Ignorar fallback seguro
     }
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = languageCode;
+  }, [languageCode]);
 
   // --- PWA: manifiesto, service worker e instalación desde navegador ---
   useEffect(() => {

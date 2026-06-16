@@ -17,6 +17,7 @@ import { MetricDelta } from './common/MetricDelta';
 import { DashboardSkeleton } from './common/DashboardSkeleton';
 import { Toast } from './common/Toast';
 import { AnareQLogo } from './common/AnareQLogo';
+import { SupportWidget } from './common/SupportWidget';
 import { LEGAL_DOCUMENT_VERSION, getLegalCopy, getLegalDocumentList, getLegalDocument } from '../constants/legalDocuments';
 
 const normalizeAppLanguageCode = (value) => {
@@ -1927,6 +1928,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
   return (
     <div className={`min-h-screen font-sans selection:bg-orange-200 selection:text-orange-900 relative ${isDarkMode ? 'anareq-dark bg-stone-950 text-stone-100' : 'bg-[#f4f2f0] text-stone-800'}`}>
       <Toast visible={toastConfig.visible} message={toastConfig} onClose={handleCloseToast} />
+      <SupportWidget languageCode={languageCode} />
       {legalDocumentModal}
       {auditPendingDelete && (
   <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 px-4">

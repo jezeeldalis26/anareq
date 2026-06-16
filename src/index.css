@@ -143,3 +143,62 @@
   --tw-gradient-via: #1c1917 var(--tw-gradient-via-position) !important;
   --tw-gradient-to: #292524 var(--tw-gradient-to-position) !important;
 }
+
+
+/* Landing refinement: smoother scroll sections + subtle media hover */
+.landing-page {
+  scroll-behavior: smooth;
+}
+
+.landing-snap-section {
+  scroll-margin-top: 76px;
+}
+
+.landing-media-card {
+  transform: translateZ(0);
+  transition: transform 420ms ease, filter 420ms ease, box-shadow 420ms ease;
+  will-change: transform;
+}
+
+.landing-media-card:hover {
+  transform: translate3d(0, -6px, 0) scale(1.018);
+  filter: saturate(1.04) contrast(1.02);
+}
+
+.landing-media-image {
+  display: block;
+  transition: transform 520ms ease;
+}
+
+.landing-media-card:hover .landing-media-image {
+  transform: scale(1.018);
+}
+
+@media (min-width: 1024px) {
+  .landing-snap-section {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+  }
+
+  .landing-sticky-copy {
+    position: sticky;
+    top: 7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page {
+    scroll-behavior: auto;
+  }
+
+  .landing-media-card,
+  .landing-media-image {
+    transition: none !important;
+  }
+
+  .landing-media-card:hover,
+  .landing-media-card:hover .landing-media-image {
+    transform: none !important;
+  }
+}

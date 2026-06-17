@@ -555,13 +555,13 @@ function SectionHeader({ eyebrow, title, desc, centered = false, light = false }
 
 function LanguageSwitcher({ languageCode, onChange }) {
   return (
-    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-1">
+    <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-white/10 bg-white/[0.04] px-1 py-0.5 sm:gap-1 sm:px-1.5 sm:py-1">
       {LANGUAGES.map((language) => (
         <button
           key={language.code}
           type="button"
           onClick={() => onChange(language.code)}
-          className={`rounded-full px-2.5 py-1.5 text-[10px] font-extrabold transition sm:px-3 ${
+          className={`rounded-full px-1.5 py-1 text-[9px] font-extrabold leading-none transition sm:px-3 sm:py-1.5 sm:text-[10px] ${
             languageCode === language.code
               ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/25'
               : 'text-stone-400 hover:bg-white/10 hover:text-white'
@@ -615,9 +615,9 @@ function LandingPage({ navigate }) {
   return (
     <main className="landing-page min-h-[100dvh] overflow-hidden bg-[#050505] text-white">
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/75 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-8 lg:px-10">
-          <a href="/" aria-label="anareQ" className="flex shrink-0 items-center">
-            <AnareQLogo variant="light" className="h-auto w-[126px] sm:w-[156px]" />
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-8 lg:px-10">
+          <a href="/" aria-label="anareQ" className="flex min-w-0 shrink-0 items-center">
+            <AnareQLogo variant="light" className="h-auto w-[104px] sm:w-[156px]" />
           </a>
 
           <nav className="hidden items-center gap-7 text-sm font-semibold text-stone-300 lg:flex">
@@ -628,19 +628,19 @@ function LandingPage({ navigate }) {
             <a href="#faq" className="transition hover:text-white">{copy.nav.faq}</a>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
             <LanguageSwitcher languageCode={landingLanguage} onChange={handleLanguageChange} />
             <a
               href="/login"
               onClick={(event) => handleNavigate(event, '/login')}
-              className="hidden rounded-full px-3 py-2 text-xs font-extrabold text-stone-300 transition hover:bg-white/10 hover:text-white sm:inline-flex"
+              className="inline-flex shrink-0 rounded-full border border-white/10 px-2.5 py-2 text-[11px] font-extrabold leading-none text-stone-200 transition hover:bg-white/10 hover:text-white sm:border-0 sm:px-3 sm:text-xs"
             >
               {copy.nav.login}
             </a>
             <a
               href="/registro"
               onClick={(event) => handleNavigate(event, '/registro')}
-              className="rounded-full bg-orange-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-xl shadow-orange-600/25 transition hover:bg-orange-500 sm:px-5"
+              className="hidden shrink-0 rounded-full bg-orange-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-xl shadow-orange-600/25 transition hover:bg-orange-500 sm:inline-flex sm:px-5"
             >
               {copy.nav.signup}
             </a>

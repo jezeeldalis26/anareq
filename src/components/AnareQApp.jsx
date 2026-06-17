@@ -51,6 +51,37 @@ const detectPreferredAppLanguage = () => {
   return 'es';
 };
 
+
+const APP_TAB_IDS = new Set(['new', 'history', 'glossary']);
+
+const normalizeInternalAppTab = (value) => {
+  const tab = String(value || '').trim().toLowerCase();
+  return APP_TAB_IDS.has(tab) ? tab : '';
+};
+
+const getInitialInternalAppTab = () => {
+  if (typeof window === 'undefined') return 'new';
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    const fromQuery = normalizeInternalAppTab(params.get('tab'));
+    if (fromQuery) return fromQuery;
+  } catch (error) {
+    // URLSearchParams may be unavailable in very old browsers.
+  }
+  const fromHash = normalizeInternalAppTab(String(window.location.hash || '').replace('#', ''));
+  return fromHash || 'new';
+};
+
+const syncInternalAppTabUrl = (tab) => {
+  if (typeof window === 'undefined') return;
+  if (window.location.pathname !== '/app') return;
+  const normalized = normalizeInternalAppTab(tab) || 'new';
+  const nextUrl = normalized === 'new' ? '/app' : `/app?tab=${normalized}`;
+  if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+    window.history.replaceState({}, '', nextUrl);
+  }
+};
+
 function AnareQApp({ initialAuthMode = 'signin', routePath = '/app', navigate } = {}) {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -78,7 +109,7 @@ function AnareQApp({ initialAuthMode = 'signin', routePath = '/app', navigate } 
     businessName: ''
   });
   
-  const [activeTab, setActiveTab] = useState('new'); 
+  const [activeTab, setActiveTab] = useState(() => getInitialInternalAppTab()); 
   const [clientName, setClientName] = useState('');
   const [includeOpCosts, setIncludeOpCosts] = useState(false); 
 
@@ -405,6 +436,29 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const activeLegalDocument = activeLegalDocumentKey
     ? getLegalDocument(languageCode, activeLegalDocumentKey)
     : null;
+
+  useEffect(() => {
+    syncInternalAppTabUrl(activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handleInternalAppRoute = () => {
+      const nextTab = getInitialInternalAppTab();
+      if (nextTab) setActiveTab(nextTab);
+    };
+    window.addEventListener('popstate', handleInternalAppRoute);
+    return () => window.removeEventListener('popstate', handleInternalAppRoute);
+  }, []);
+
+  const openInternalAppTab = (tab) => {
+    const nextTab = normalizeInternalAppTab(tab) || 'new';
+    setActiveTab(nextTab);
+  };
+
+  const openNewAuditTab = () => {
+    setActiveTab('new');
+    resetForm();
+  };
 
   const openLegalDocument = (documentKey) => setActiveLegalDocumentKey(documentKey);
   const closeLegalDocument = () => setActiveLegalDocumentKey(null);
@@ -1923,22 +1977,19 @@ const restoreActiveAuditAfterHistoryRead = () => {
       id: 'new',
       label: t('navNew'),
       Icon: PlusCircle,
-      onSelect: () => {
-        setActiveTab('new');
-        resetForm();
-      }
+      onSelect: openNewAuditTab
     },
     {
       id: 'history',
       label: t('navHistory'),
       Icon: History,
-      onSelect: () => setActiveTab('history')
+      onSelect: () => openInternalAppTab('history')
     },
     {
       id: 'glossary',
       label: t('navGlossary'),
       Icon: BookOpen,
-      onSelect: () => setActiveTab('glossary')
+      onSelect: () => openInternalAppTab('glossary')
     }
   ];
 

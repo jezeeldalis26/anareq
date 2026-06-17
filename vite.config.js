@@ -19,7 +19,8 @@ export default defineConfig({
         theme_color: '#0c0a09',
         background_color: '#0c0a09',
         display: 'standalone',
-        start_url: '/',
+        scope: '/',
+        start_url: '/app',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -38,34 +39,30 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        shortcuts: [
+          {
+            name: 'Nuevo diagnóstico',
+            short_name: 'Diagnóstico',
+            description: 'Abrir anareQ para crear un nuevo diagnóstico.',
+            url: '/app?tab=new',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Historial',
+            short_name: 'Historial',
+            description: 'Abrir el historial de auditorías guardadas.',
+            url: '/app?tab=history',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Glosario',
+            short_name: 'Glosario',
+            description: 'Abrir el glosario de métricas de anareQ.',
+            url: '/app?tab=glossary',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
       },
     }),
   ],
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined
-
-          if (id.includes('/react/') || id.includes('/react-dom/')) {
-            return 'vendor-react'
-          }
-
-          if (id.includes('/firebase/') || id.includes('/@firebase/')) {
-            return 'vendor-firebase'
-          }
-
-          if (id.includes('/recharts/') || id.includes('/d3-')) {
-            return 'vendor-charts'
-          }
-
-          if (id.includes('/lucide-react/')) {
-            return 'vendor-icons'
-          }
-
-          return 'vendor'
-        },
-      },
-    },
-  },
 })

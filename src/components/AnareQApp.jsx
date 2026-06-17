@@ -1216,6 +1216,12 @@ setAuditPendingDelete(null);
       orange: [253, 102, 13],
       orangeSoft: [255, 247, 237],
       amberSoft: [255, 251, 235],
+      green: [22, 163, 74],
+      greenSoft: [240, 253, 244],
+      greenLine: [187, 247, 208],
+      red: [220, 38, 38],
+      redSoft: [254, 242, 242],
+      redLine: [254, 202, 202],
       white: [255, 255, 255]
     };
     const safePdfText = (value = '') => String(value ?? '')
@@ -1353,11 +1359,16 @@ setAuditPendingDelete(null);
     y += 35;
 
     if (primaryBottleneck) {
-      y = sectionTitle(t('pdfPrimaryBottleneck'), y);
+      const insightPdfPalette = primaryBottleneck.type === 'strength'
+        ? { fill: colors.greenSoft, stroke: colors.greenLine, text: colors.green }
+        : primaryBottleneck.type === 'optimization'
+          ? { fill: colors.amberSoft, stroke: [253, 186, 116], text: colors.orange }
+          : { fill: colors.redSoft, stroke: colors.redLine, text: colors.red };
+      y = sectionTitle(primaryBottleneck.label || t('pdfPrimaryBottleneck'), y);
       const bottleneckLines = lines(primaryBottleneck.message, CONTENT_W - 12, 8.2).slice(0, 3);
       const bottleneckH = Math.max(18, 11 + (bottleneckLines.length * 4));
-      box(M, y, CONTENT_W, bottleneckH, colors.amberSoft, [253, 186, 116], 3);
-      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7.5); setText(colors.orange);
+      box(M, y, CONTENT_W, bottleneckH, insightPdfPalette.fill, insightPdfPalette.stroke, 3);
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7.5); setText(insightPdfPalette.text);
       pdf.text(`${safePdfText(primaryBottleneck.title).toUpperCase()} | ${Math.round(primaryBottleneck.score)}/100`, M + 5, y + 6);
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.2); setText(colors.ink);
       pdf.text(bottleneckLines, M + 5, y + 11.5);
@@ -1758,6 +1769,41 @@ const restoreActiveAuditAfterHistoryRead = () => {
 
   const comparisonData = comparisonId ? usableHistory.find(h => h.id === comparisonId)?.results : null;
   const primaryBottleneck = results ? getPrimaryBottleneck(results, languageCode) : null;
+  const primaryInsightTone = primaryBottleneck?.type || 'bottleneck';
+  const primaryInsightVisual = {
+    strength: {
+      iconBox: 'bg-green-50 border-green-200',
+      icon: 'text-green-600',
+      label: 'text-green-700',
+      printBorder: 'print:border-green-300',
+      pdfClass: 'border-green-200 bg-green-50',
+      pdfLabel: 'text-green-700'
+    },
+    optimization: {
+      iconBox: 'bg-orange-50 border-orange-200',
+      icon: 'text-orange-600',
+      label: 'text-orange-700',
+      printBorder: 'print:border-orange-300',
+      pdfClass: 'border-orange-200 bg-orange-50',
+      pdfLabel: 'text-orange-700'
+    },
+    bottleneck: {
+      iconBox: 'bg-red-50 border-red-200',
+      icon: 'text-red-600',
+      label: 'text-red-600',
+      printBorder: 'print:border-red-300',
+      pdfClass: 'border-red-200 bg-red-50',
+      pdfLabel: 'text-red-700'
+    }
+  }[primaryInsightTone] || {
+    iconBox: 'bg-red-50 border-red-200',
+    icon: 'text-red-600',
+    label: 'text-red-600',
+    printBorder: 'print:border-red-300',
+    pdfClass: 'border-red-200 bg-red-50',
+    pdfLabel: 'text-red-700'
+  };
+  const PrimaryInsightIcon = primaryInsightTone === 'strength' ? CheckCircle : primaryInsightTone === 'optimization' ? TrendingUp : AlertTriangle;
 
   const localizedGlossaryTerms = GLOSSARY_TERMS.map(item => localizeGlossaryTerm(item, languageCode));
   const normalizedGlossarySearch = normalizeSearchText(glossarySearch);
@@ -2831,21 +2877,21 @@ const restoreActiveAuditAfterHistoryRead = () => {
                       </div>
                     </div>
 
-                    {/* CONEXIÓN NARRATIVA: COMPONENTE DÉBIL -> DIAGNÓSTICO */}
+                    {/* CONEXIÓN NARRATIVA: ALERTA, OPTIMIZACIÓN O PUNTO FUERTE */}
                     {primaryBottleneck && (
-                      <div className="bg-white p-5 rounded-3xl shadow-sm border border-stone-200 page-break-avoid print:border-stone-300">
+                      <div className={`bg-white p-5 rounded-3xl shadow-sm border border-stone-200 page-break-avoid ${primaryInsightVisual.printBorder}`}>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                          <div className="shrink-0 w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center">
-                            <AlertTriangle className="w-7 h-7 text-red-600" />
+                          <div className={`shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center ${primaryInsightVisual.iconBox}`}>
+                            <PrimaryInsightIcon className={`w-7 h-7 ${primaryInsightVisual.icon}`} />
                           </div>
                           <div className="flex-1">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
-                              <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">{t('primaryBottleneck')}</p>
-                              <BenchmarkTag status="danger" text={`${primaryBottleneck.icon} ${Math.round(primaryBottleneck.score)}/100`} />
+                              <p className={`text-[10px] font-black uppercase tracking-widest ${primaryInsightVisual.label}`}>{primaryBottleneck.label}</p>
+                              <BenchmarkTag status={primaryBottleneck.status || 'danger'} text={`${primaryBottleneck.icon} ${Math.round(primaryBottleneck.score)}/100`} />
                             </div>
                             <h3 className="text-base font-black text-stone-900">{primaryBottleneck.title}</h3>
                             <p className="text-xs sm:text-sm text-stone-700 font-medium leading-relaxed mt-1">{primaryBottleneck.message}</p>
-                            <p className="text-[10px] text-stone-500 font-bold mt-2">{t('bottleneckNote')}</p>
+                            <p className="text-[10px] text-stone-500 font-bold mt-2">{primaryBottleneck.note}</p>
                           </div>
                         </div>
                       </div>
@@ -3807,7 +3853,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
               </div>
             </section>
 
-            {primaryBottleneck && <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="text-[10px] font-black uppercase tracking-widest text-amber-700">{t('pdfPrimaryBottleneck')}</p><p className="text-sm font-bold text-stone-800 mt-2">{primaryBottleneck.message}</p></section>}
+            {primaryBottleneck && <section className={`mb-6 rounded-2xl border p-4 ${primaryInsightVisual.pdfClass}`}><p className={`text-[10px] font-black uppercase tracking-widest ${primaryInsightVisual.pdfLabel}`}>{primaryBottleneck.label}</p><p className="text-sm font-bold text-stone-800 mt-2">{primaryBottleneck.message}</p></section>}
             <div className="mt-8 pt-4 border-t border-stone-300 text-center text-[10px] font-bold text-stone-400">{t('pdfReportFooter')}</div>
             </div>
             <div className="professional-pdf-page">

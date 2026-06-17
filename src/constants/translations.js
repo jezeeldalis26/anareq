@@ -140,7 +140,21 @@ export const NARRATIVE_TRANSLATIONS = {
     bottleneckAdsTitle: 'Retorno publicitario', bottleneckAds: 'El retorno publicitario es el componente más débil ({score}/100). Prioriza revisar costos, oferta y anuncios antes de escalar.',
     bottleneckSalesTitle: 'Cierre de ventas', bottleneckSales: 'El cierre comercial es el principal cuello de botella ({score}/100). La conversión actual de {conversion}% está limitando el diagnóstico global.',
     bottleneckMarginTitle: 'Margen del negocio', bottleneckMargin: 'El margen es el componente más débil ({score}/100). Antes de aumentar inversión, revisa estructura de costos, ticket y rentabilidad real.',
-    bottleneckStabilityTitle: 'Estabilidad estadística', bottleneckStability: 'La muestra todavía es limitada ({score}/100). Necesitas más volumen de leads y ventas antes de tomar decisiones agresivas de escalado.'
+    bottleneckStabilityTitle: 'Estabilidad estadística', bottleneckStability: 'La muestra todavía es limitada ({score}/100). Necesitas más volumen de leads y ventas antes de tomar decisiones agresivas de escalado.',
+    insightBottleneckLabel: 'Principal cuello de botella',
+    insightOptimizationLabel: 'Área a optimizar',
+    insightStrengthLabel: 'Lectura destacada',
+    insightBottleneckNote: 'Las recomendaciones siguientes priorizan este componente para que sepas qué corregir primero.',
+    insightOptimizationNote: 'La campaña muestra señales positivas, pero este componente puede mejorar para sostener mejor el crecimiento.',
+    insightStrengthNote: 'No se detecta un cuello de botella crítico. Esta lectura destaca el componente más fuerte del diagnóstico.',
+    optimizationAds: 'La campaña muestra señales positivas, pero el retorno publicitario es el componente con mayor oportunidad de mejora ({score}/100). Revisa oferta, costos y eficiencia para sostener mejor el crecimiento. MER actual: {mer}x.',
+    optimizationSales: 'La campaña tiene una base funcional, pero el cierre de ventas todavía puede mejorar ({score}/100). La conversión actual es {conversion}%; optimizar seguimiento y proceso comercial puede elevar la rentabilidad.',
+    optimizationMargin: 'La campaña tiene lectura positiva, pero el margen del negocio es el punto que más conviene vigilar ({score}/100). Revisa costos, ticket promedio y estructura de precios antes de aumentar inversión con fuerza.',
+    optimizationStability: 'Los números son favorables, pero la muestra todavía puede fortalecerse ({score}/100). Conviene validar con más volumen de leads, ventas o días antes de tomar decisiones más agresivas.',
+    strengthAds: 'El retorno publicitario destaca como punto fuerte ({score}/100). El MER actual de {mer}x muestra una relación favorable entre inversión y facturación registrada.',
+    strengthSales: 'El cierre de ventas destaca como punto fuerte ({score}/100). La conversión actual de {conversion}% indica que el proceso comercial está aprovechando bien el tráfico recibido.',
+    strengthMargin: 'El margen del negocio destaca como punto fuerte ({score}/100). La estructura permite sostener rentabilidad con los datos ingresados.',
+    strengthStability: 'La estabilidad estadística destaca como punto fuerte ({score}/100). El diagnóstico cuenta con una base de datos más consistente para interpretar la campaña.'
   },
   en: {
     criticalSummary: 'The current system is unsustainable or does not yet have enough data to be validated.',
@@ -164,7 +178,21 @@ export const NARRATIVE_TRANSLATIONS = {
     bottleneckAdsTitle: 'Advertising return', bottleneckAds: 'Advertising return is the weakest component ({score}/100). Review costs, offer and ads before scaling.',
     bottleneckSalesTitle: 'Sales closing', bottleneckSales: 'Sales closing is the primary bottleneck ({score}/100). The current {conversion}% conversion rate is limiting the global diagnosis.',
     bottleneckMarginTitle: 'Business margin', bottleneckMargin: 'Margin is the weakest component ({score}/100). Before increasing investment, review costs, average ticket and real profitability.',
-    bottleneckStabilityTitle: 'Statistical stability', bottleneckStability: 'The data sample is still limited ({score}/100). You need more leads and sales before making aggressive scaling decisions.'
+    bottleneckStabilityTitle: 'Statistical stability', bottleneckStability: 'The data sample is still limited ({score}/100). You need more leads and sales before making aggressive scaling decisions.',
+    insightBottleneckLabel: 'Primary bottleneck',
+    insightOptimizationLabel: 'Area to optimize',
+    insightStrengthLabel: 'Highlighted insight',
+    insightBottleneckNote: 'The following recommendations prioritize this component so you know what to fix first.',
+    insightOptimizationNote: 'The campaign shows positive signs, but this component can improve to support growth more safely.',
+    insightStrengthNote: 'No critical bottleneck was detected. This insight highlights the strongest component in the diagnosis.',
+    optimizationAds: 'The campaign shows positive signs, but advertising return is the component with the clearest improvement opportunity ({score}/100). Review offer, costs and efficiency to support growth more safely. Current MER: {mer}x.',
+    optimizationSales: 'The campaign has a functional base, but sales closing can still improve ({score}/100). Current conversion is {conversion}%; improving follow-up and sales process can increase profitability.',
+    optimizationMargin: 'The campaign has a positive reading, but business margin is the point to watch most closely ({score}/100). Review costs, average ticket and pricing structure before increasing spend aggressively.',
+    optimizationStability: 'The numbers are favorable, but the sample can still become stronger ({score}/100). Validate with more leads, sales or days before taking more aggressive decisions.',
+    strengthAds: 'Advertising return stands out as a strong point ({score}/100). The current {mer}x MER shows a favorable relationship between spend and registered revenue.',
+    strengthSales: 'Sales closing stands out as a strong point ({score}/100). The current {conversion}% conversion rate indicates the sales process is making good use of the traffic received.',
+    strengthMargin: 'Business margin stands out as a strong point ({score}/100). The structure supports profitability based on the data entered.',
+    strengthStability: 'Statistical stability stands out as a strong point ({score}/100). The diagnosis has a more consistent data base to interpret the campaign.'
   },
   pt: {
     criticalSummary: 'O sistema atual é insustentável ou ainda não possui dados suficientes para ser validado.',
@@ -188,7 +216,21 @@ export const NARRATIVE_TRANSLATIONS = {
     bottleneckAdsTitle: 'Retorno publicitário', bottleneckAds: 'O retorno publicitário é o componente mais fraco ({score}/100). Revise custos, oferta e anúncios antes de escalar.',
     bottleneckSalesTitle: 'Fechamento de vendas', bottleneckSales: 'O fechamento comercial é o principal gargalo ({score}/100). A conversão atual de {conversion}% está limitando o diagnóstico global.',
     bottleneckMarginTitle: 'Margem do negócio', bottleneckMargin: 'A margem é o componente mais fraco ({score}/100). Antes de aumentar o investimento, revise custos, ticket médio e rentabilidade real.',
-    bottleneckStabilityTitle: 'Estabilidade estatística', bottleneckStability: 'A amostra ainda é limitada ({score}/100). Você precisa de mais leads e vendas antes de tomar decisões agressivas de escala.'
+    bottleneckStabilityTitle: 'Estabilidade estatística', bottleneckStability: 'A amostra ainda é limitada ({score}/100). Você precisa de mais leads e vendas antes de tomar decisões agressivas de escala.',
+    insightBottleneckLabel: 'Principal gargalo',
+    insightOptimizationLabel: 'Área para otimizar',
+    insightStrengthLabel: 'Leitura destacada',
+    insightBottleneckNote: 'As recomendações seguintes priorizam este componente para indicar o que corrigir primeiro.',
+    insightOptimizationNote: 'A campanha mostra sinais positivos, mas este componente pode melhorar para sustentar melhor o crescimento.',
+    insightStrengthNote: 'Nenhum gargalo crítico foi detectado. Esta leitura destaca o componente mais forte do diagnóstico.',
+    optimizationAds: 'A campanha mostra sinais positivos, mas o retorno publicitário é o componente com maior oportunidade de melhoria ({score}/100). Revise oferta, custos e eficiência para sustentar melhor o crescimento. MER atual: {mer}x.',
+    optimizationSales: 'A campanha tem uma base funcional, mas o fechamento de vendas ainda pode melhorar ({score}/100). A conversão atual é {conversion}%; otimizar acompanhamento e processo comercial pode elevar a rentabilidade.',
+    optimizationMargin: 'A campanha tem leitura positiva, mas a margem do negócio é o ponto que mais vale acompanhar ({score}/100). Revise custos, ticket médio e estrutura de preços antes de aumentar investimento com força.',
+    optimizationStability: 'Os números são favoráveis, mas a amostra ainda pode ficar mais forte ({score}/100). Valide com mais volume de leads, vendas ou dias antes de tomar decisões mais agressivas.',
+    strengthAds: 'O retorno publicitário se destaca como ponto forte ({score}/100). O MER atual de {mer}x mostra uma relação favorável entre investimento e faturamento registrado.',
+    strengthSales: 'O fechamento de vendas se destaca como ponto forte ({score}/100). A conversão atual de {conversion}% indica que o processo comercial está aproveitando bem o tráfego recebido.',
+    strengthMargin: 'A margem do negócio se destaca como ponto forte ({score}/100). A estrutura permite sustentar rentabilidade com os dados informados.',
+    strengthStability: 'A estabilidade estatística se destaca como ponto forte ({score}/100). O diagnóstico conta com uma base de dados mais consistente para interpretar a campanha.'
   }
 };
 export const fillNarrative = (language, key, params = {}) => {

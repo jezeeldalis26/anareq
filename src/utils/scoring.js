@@ -56,13 +56,94 @@ export const calculateMeasurementConfidence = (answers) => {
 
 export const getPrimaryBottleneck = (result, language = 'es') => {
   if (!result) return null;
+
+  const adScore = safeNum(result.adScore);
+  const salesScore = safeNum(result.salesScore);
+  const marginScore = safeNum(result.marginScore);
+  const stabilityScore = safeNum(result.stabilityScore);
+  const globalScore = safeNum(result.score);
+  const profit = safeNum(result.profit);
+  const realNetProfit = safeNum(result.realNetProfit);
+  const conversion = safeNum(result.conversion);
+  const mer = safeNum(result.mer);
+  const hasOpCosts = Boolean(result.hasOpCosts);
+
   const candidates = [
-    { key: 'ads', title: fillNarrative(language, 'bottleneckAdsTitle'), score: safeNum(result.adScore), icon: 'MER', message: fillNarrative(language, 'bottleneckAds', { score: Math.round(safeNum(result.adScore)) }) },
-    { key: 'sales', title: fillNarrative(language, 'bottleneckSalesTitle'), score: safeNum(result.salesScore), icon: 'VENTAS', message: fillNarrative(language, 'bottleneckSales', { score: Math.round(safeNum(result.salesScore)), conversion: safeNum(result.conversion).toFixed(1) }) },
-    { key: 'margin', title: fillNarrative(language, 'bottleneckMarginTitle'), score: safeNum(result.marginScore), icon: 'MARGEN', message: fillNarrative(language, 'bottleneckMargin', { score: Math.round(safeNum(result.marginScore)) }) },
-    { key: 'stability', title: fillNarrative(language, 'bottleneckStabilityTitle'), score: safeNum(result.stabilityScore), icon: 'MUESTRA', message: fillNarrative(language, 'bottleneckStability', { score: Math.round(safeNum(result.stabilityScore)) }) }
+    {
+      key: 'ads',
+      title: fillNarrative(language, 'bottleneckAdsTitle'),
+      score: adScore,
+      icon: 'MER',
+      bottleneckMessage: fillNarrative(language, 'bottleneckAds', { score: Math.round(adScore) }),
+      optimizationMessage: fillNarrative(language, 'optimizationAds', { score: Math.round(adScore), mer: mer.toFixed(2) }),
+      strengthMessage: fillNarrative(language, 'strengthAds', { score: Math.round(adScore), mer: mer.toFixed(2) })
+    },
+    {
+      key: 'sales',
+      title: fillNarrative(language, 'bottleneckSalesTitle'),
+      score: salesScore,
+      icon: 'VENTAS',
+      bottleneckMessage: fillNarrative(language, 'bottleneckSales', { score: Math.round(salesScore), conversion: conversion.toFixed(1) }),
+      optimizationMessage: fillNarrative(language, 'optimizationSales', { score: Math.round(salesScore), conversion: conversion.toFixed(1) }),
+      strengthMessage: fillNarrative(language, 'strengthSales', { score: Math.round(salesScore), conversion: conversion.toFixed(1) })
+    },
+    {
+      key: 'margin',
+      title: fillNarrative(language, 'bottleneckMarginTitle'),
+      score: marginScore,
+      icon: 'MARGEN',
+      bottleneckMessage: fillNarrative(language, 'bottleneckMargin', { score: Math.round(marginScore) }),
+      optimizationMessage: fillNarrative(language, 'optimizationMargin', { score: Math.round(marginScore) }),
+      strengthMessage: fillNarrative(language, 'strengthMargin', { score: Math.round(marginScore) })
+    },
+    {
+      key: 'stability',
+      title: fillNarrative(language, 'bottleneckStabilityTitle'),
+      score: stabilityScore,
+      icon: 'MUESTRA',
+      bottleneckMessage: fillNarrative(language, 'bottleneckStability', { score: Math.round(stabilityScore) }),
+      optimizationMessage: fillNarrative(language, 'optimizationStability', { score: Math.round(stabilityScore) }),
+      strengthMessage: fillNarrative(language, 'strengthStability', { score: Math.round(stabilityScore) })
+    }
   ];
-  return candidates.sort((a, b) => a.score - b.score)[0];
+
+  const weakest = [...candidates].sort((a, b) => a.score - b.score)[0];
+  const strongest = [...candidates].sort((a, b) => b.score - a.score)[0];
+
+  const isProfitable = hasOpCosts ? realNetProfit > 0 : profit > 0;
+  const isHealthy = globalScore >= 75 && isProfitable && conversion >= 7 && mer >= 2 && stabilityScore >= 40;
+  const isPositiveButOptimizable = globalScore >= 56 && isProfitable && conversion >= 5;
+
+  if (isHealthy) {
+    return {
+      ...strongest,
+      type: 'strength',
+      status: 'good',
+      label: fillNarrative(language, 'insightStrengthLabel'),
+      note: fillNarrative(language, 'insightStrengthNote'),
+      message: strongest.strengthMessage
+    };
+  }
+
+  if (isPositiveButOptimizable) {
+    return {
+      ...weakest,
+      type: 'optimization',
+      status: 'warning',
+      label: fillNarrative(language, 'insightOptimizationLabel'),
+      note: fillNarrative(language, 'insightOptimizationNote'),
+      message: weakest.optimizationMessage
+    };
+  }
+
+  return {
+    ...weakest,
+    type: 'bottleneck',
+    status: 'danger',
+    label: fillNarrative(language, 'insightBottleneckLabel'),
+    note: fillNarrative(language, 'insightBottleneckNote'),
+    message: weakest.bottleneckMessage
+  };
 };
 
 

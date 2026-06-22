@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { auth, googleProvider, db, doc, getDoc, setDoc, onAuthStateChanged } from '../services/firebaseService';
 import { signInWithGoogle, signInWithEmail, createAccountWithEmail, resetPassword, signOut } from '../services/firebaseService';
-import { BarChart2, PlusCircle, History, ShieldCheck, Printer, Save, CheckCircle, TrendingUp, TrendingDown, AlertCircle, Calendar, Target, Users, AlertTriangle, PieChart as PieIcon, Activity, Info, Copy, Download, Building, ToggleLeft, ToggleRight, Briefcase, User, Star, LogOut, ChevronDown, BarChart as ChartIcon, Crosshair, Scale, Trash2, Share2, FileText, ArrowLeft, HelpCircle, MessageSquare, LayoutTemplate, Megaphone, Plus, BookOpen, Search, Moon, Sun, Eye, Upload, FileSpreadsheet, XCircle, RefreshCw, Check, Info as InfoIcon } from 'lucide-react';
+import { BarChart2, PlusCircle, History, ShieldCheck, Printer, Save, CheckCircle, TrendingUp, TrendingDown, AlertCircle, Calendar, Target, Users, AlertTriangle, PieChart as PieIcon, Activity, Info, Copy, Download, Building, ToggleLeft, ToggleRight, Briefcase, User, LogOut, ChevronDown, BarChart as ChartIcon, Crosshair, Scale, Trash2, Share2, FileText, ArrowLeft, HelpCircle, MessageSquare, LayoutTemplate, Megaphone, Plus, BookOpen, Search, Moon, Sun, Eye, Upload, FileSpreadsheet, XCircle, RefreshCw, Check, Info as InfoIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, AreaChart, Area, PieChart, Pie } from 'recharts';
 import { CURRENCY_OPTIONS, LANGUAGE_OPTIONS, LANGUAGE_LOCALES } from '../constants/currencies';
 import { CATEGORY_TRANSLATIONS, getMeasurementQuestions, translateUI, translateStatus, getMeasurementConfidenceMessage, fillNarrative } from '../constants/translations';
@@ -168,7 +168,7 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
     phone: accountProfile.phone || '',
     businessName: accountProfile.businessName || '',
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(profileDisplayName)}&background=ea580c&color=fff&size=128`,
-    plan: languageCode === 'en' ? 'Beta access' : languageCode === 'pt' ? 'Acesso beta' : 'Acceso beta',
+    plan: '',
   };
 
   // --- SESIÓN REAL CON FIREBASE AUTH ---
@@ -407,7 +407,6 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const money = (value, digits = 0) => formatCurrency(value, currencyCode, languageCode, digits);
   const localizeCurrencyText = (value) => replaceCurrencySymbol(value, currencyCode);
   const locale = LANGUAGE_LOCALES[languageCode] || LANGUAGE_LOCALES.es;
-  const accountStatusLabel = languageCode === 'en' ? 'Account status' : languageCode === 'pt' ? 'Estado da conta' : 'Estado de cuenta';
   const signupPlaceholders = languageCode === 'en'
     ? { name: 'Full name', businessName: 'Business or project', phone: 'Phone or WhatsApp' }
     : languageCode === 'pt'
@@ -2149,7 +2148,6 @@ const restoreActiveAuditAfterHistoryRead = () => {
               <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center gap-2 p-1 pl-2 pr-1.5 rounded-full hover:bg-stone-100 border border-transparent hover:border-stone-200 transition-all focus:outline-none">
                 <div className="hidden md:flex flex-col text-right">
                   <span className="text-sm font-bold text-stone-900 leading-tight">{userData.name}</span>
-                  <span className="text-[10px] font-medium text-orange-600 flex justify-end gap-1 items-center"><Star className="w-3 h-3 fill-orange-600" /> {userData.plan}</span>
                 </div>
                 <img src={userData.avatar} alt="User" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow-sm border border-stone-200" />
                 <ChevronDown className="w-4 h-4 text-stone-400 hidden sm:block" />
@@ -2161,7 +2159,6 @@ const restoreActiveAuditAfterHistoryRead = () => {
                     <div><p className="font-black text-stone-900">{userData.name}</p><p className="text-xs text-stone-500 font-medium">{userData.email}</p></div>
                   </div>
                   <div className="p-4 bg-stone-50">
-                    <div className="flex justify-between items-center mb-3"><span className="text-xs font-bold text-stone-500 uppercase tracking-wider">{accountStatusLabel}</span><span className="text-xs font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-md flex items-center gap-1"><Star className="w-3 h-3 fill-orange-600" /> {userData.plan}</span></div>
                     <div className="flex justify-between items-center"><span className="text-xs font-bold text-stone-500 uppercase tracking-wider">{t('audits')}</span><span className="text-sm font-black text-stone-900">{history.length} / ∞</span></div>
                   </div>
                   <div className="p-4 border-t border-stone-100 space-y-3">
@@ -2290,21 +2287,6 @@ const restoreActiveAuditAfterHistoryRead = () => {
           })}
         </div>
 
-        {!isSidebarCollapsed && (
-          <div className={`mt-auto overflow-hidden rounded-3xl border p-4 shadow-sm ${isDarkMode ? 'border-stone-800 bg-stone-900/80' : 'border-orange-100 bg-gradient-to-br from-orange-50 via-white to-stone-50'}`}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">{accountStatusLabel}</p>
-            <p className="mt-1 text-sm font-black text-stone-900">{userData.plan}</p>
-            <p className="mt-1 truncate text-[11px] font-bold text-stone-500">{userData.email}</p>
-          </div>
-        )}
-
-        {isSidebarCollapsed && (
-          <div className="mt-auto flex justify-center">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-2xl border text-orange-600 shadow-sm ${isDarkMode ? 'border-stone-800 bg-stone-900/80' : 'border-orange-100 bg-orange-50'}`} title={userData.plan}>
-              <Star className="h-4 w-4" />
-            </div>
-          </div>
-        )}
       </aside>
 
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-[100vw] overflow-hidden box-border z-50 border-t backdrop-blur px-2 py-2 no-print ${isDarkMode ? 'border-stone-700 bg-stone-900/95' : 'border-stone-200 bg-white/95'}`}>

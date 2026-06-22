@@ -1161,8 +1161,17 @@ const handleAdChange = (setId, adId, field, value) => {
 
     try {
       const nextAccessState = await consumeTrialAudit(currentUser.uid, currentUser.email || '');
-      setAccessState(nextAccessState);
-      if (!getAccessInfo(nextAccessState).canUse && getAccessInfo(nextAccessState).reason) setShowPaywall(true);
+      const nextAccessInfo = getAccessInfo(nextAccessState);
+      const trialUsed = Number(nextAccessState?.trialAuditsUsed || 0);
+      const trialLimit = Number(nextAccessState?.trialAuditLimit || 3);
+      const consumedLastFreeAudit = trialUsed >= trialLimit && !nextAccessInfo.isPaid && !nextAccessInfo.isPromo;
+
+      // Permite que la tercera auditoría termine normalmente.
+      // El paywall aparece en el siguiente intento, no encima del último diagnóstico gratis.
+      if (!consumedLastFreeAudit) {
+        setAccessState(nextAccessState);
+        if (!nextAccessInfo.canUse && nextAccessInfo.reason) setShowPaywall(true);
+      }
     } catch (error) {
       console.warn('Trial limit reached:', error);
       if (error?.state) setAccessState(error.state);

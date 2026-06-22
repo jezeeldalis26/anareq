@@ -1,0 +1,31 @@
+{
+  "collection": "accessCodes",
+  "documents": {
+    "ANAREQ30": {
+      "active": true,
+      "type": "days",
+      "durationDays": 30,
+      "planType": "promo_30_days",
+      "maxRedemptions": 20,
+      "redeemedCount": 0,
+      "expiresAt": "2026-12-31T23:59:59-03:00"
+    },
+    "ANAREQ1ANO": {
+      "active": true,
+      "type": "days",
+      "durationDays": 365,
+      "planType": "promo_yearly",
+      "maxRedemptions": 5,
+      "redeemedCount": 0,
+      "expiresAt": "2026-12-31T23:59:59-03:00"
+    },
+    "JEZEELVIP": {
+      "active": true,
+      "type": "lifetime",
+      "durationDays": 0,
+      "planType": "lifetime",
+      "maxRedemptions": 1,
+      "redeemedCount": 0
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { auth, googleProvider, db, doc, getDoc, setDoc, onAuthStateChanged } from '../services/firebaseService';
-import { signInWithGoogle, signInWithEmail, createAccountWithEmail, resetPassword, signOut } from '../services/firebaseService';
-import { BarChart2, PlusCircle, History, ShieldCheck, Printer, Save, CheckCircle, TrendingUp, TrendingDown, AlertCircle, Calendar, Target, Users, AlertTriangle, PieChart as PieIcon, Activity, Info, Copy, Download, Building, ToggleLeft, ToggleRight, Briefcase, User, LogOut, ChevronDown, BarChart as ChartIcon, Crosshair, Scale, Trash2, Share2, FileText, ArrowLeft, HelpCircle, MessageSquare, LayoutTemplate, Megaphone, Plus, BookOpen, Search, Moon, Sun, Eye, Upload, FileSpreadsheet, XCircle, RefreshCw, Check, Info as InfoIcon } from 'lucide-react';
+import { signInWithGoogle, signInWithEmail, createAccountWithEmail, resetPassword, signOut, ensureUserAccess, getAccessInfo, consumeTrialAudit, getCurrentUserIdToken } from '../services/firebaseService';
+import { BarChart2, PlusCircle, History, ShieldCheck, Printer, Save, CheckCircle, TrendingUp, TrendingDown, AlertCircle, Calendar, Target, Users, AlertTriangle, PieChart as PieIcon, Activity, Info, Copy, Download, Building, ToggleLeft, ToggleRight, Briefcase, User, Star, LogOut, ChevronDown, BarChart as ChartIcon, Crosshair, Scale, Trash2, Share2, FileText, ArrowLeft, HelpCircle, MessageSquare, LayoutTemplate, Megaphone, Plus, BookOpen, Search, Moon, Sun, Eye, Upload, FileSpreadsheet, XCircle, RefreshCw, Check, Info as InfoIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, AreaChart, Area, PieChart, Pie } from 'recharts';
 import { CURRENCY_OPTIONS, LANGUAGE_OPTIONS, LANGUAGE_LOCALES } from '../constants/currencies';
 import { CATEGORY_TRANSLATIONS, getMeasurementQuestions, translateUI, translateStatus, getMeasurementConfidenceMessage, fillNarrative } from '../constants/translations';
@@ -82,6 +82,96 @@ const syncInternalAppTabUrl = (tab) => {
   }
 };
 
+const BILLING_PRICE_LABELS = {
+  monthly: 'R$99/mês',
+  yearly: 'R$899/ano'
+};
+
+const getAccessCopy = (languageCode = 'es') => {
+  if (languageCode === 'pt') {
+    return {
+      trialBadge: 'Teste grátis',
+      activeBadge: 'Plano ativo',
+      promoBadge: 'Acesso promocional',
+      expiredBadge: 'Acesso necessário',
+      trialInfo: 'Você tem {audits} auditorias grátis ou {days} dias de teste.',
+      trialEnded: 'Seu teste grátis terminou. Escolha um plano para continuar usando anareQ.',
+      paywallTitle: 'Continue auditando campanhas com anareQ',
+      paywallDesc: 'Seu teste grátis inclui 3 auditorias em até 3 dias. Para continuar gerando diagnósticos, escolha um plano ou use um código de acesso.',
+      monthlyTitle: 'Plano mensal',
+      yearlyTitle: 'Plano anual',
+      monthlyDesc: 'Ideal para validar e usar com seus primeiros clientes.',
+      yearlyDesc: 'Melhor valor para gestores e agências que auditam todos os meses.',
+      subscribeMonthly: 'Assinar mensal',
+      subscribeYearly: 'Assinar anual',
+      codeTitle: 'Tenho um código de acesso',
+      codePlaceholder: 'Digite seu código',
+      redeem: 'Ativar código',
+      portal: 'Gerenciar assinatura',
+      refresh: 'Atualizar acesso',
+      checkoutError: 'Não foi possível abrir o pagamento. Revise a configuração do Stripe.',
+      codeSuccess: 'Código ativado com sucesso.',
+      codeError: 'Código inválido, expirado ou já utilizado.',
+      loading: 'Verificando acesso...',
+      launch: 'Preço de lançamento'
+    };
+  }
+  if (languageCode === 'en') {
+    return {
+      trialBadge: 'Free trial',
+      activeBadge: 'Active plan',
+      promoBadge: 'Promo access',
+      expiredBadge: 'Access required',
+      trialInfo: 'You have {audits} free audits or {days} trial days.',
+      trialEnded: 'Your free trial has ended. Choose a plan to keep using anareQ.',
+      paywallTitle: 'Keep auditing campaigns with anareQ',
+      paywallDesc: 'Your free trial includes 3 audits within 3 days. To keep generating diagnostics, choose a plan or use an access code.',
+      monthlyTitle: 'Monthly plan',
+      yearlyTitle: 'Annual plan',
+      monthlyDesc: 'Ideal to validate and use with your first clients.',
+      yearlyDesc: 'Best value for media buyers and agencies auditing every month.',
+      subscribeMonthly: 'Subscribe monthly',
+      subscribeYearly: 'Subscribe yearly',
+      codeTitle: 'I have an access code',
+      codePlaceholder: 'Enter your code',
+      redeem: 'Activate code',
+      portal: 'Manage subscription',
+      refresh: 'Refresh access',
+      checkoutError: 'Could not open payment. Review the Stripe configuration.',
+      codeSuccess: 'Code activated successfully.',
+      codeError: 'Invalid, expired or already used code.',
+      loading: 'Checking access...',
+      launch: 'Launch price'
+    };
+  }
+  return {
+    trialBadge: 'Prueba gratis',
+    activeBadge: 'Plan activo',
+    promoBadge: 'Acceso promocional',
+    expiredBadge: 'Acceso requerido',
+    trialInfo: 'Tienes {audits} auditorías gratis o {days} días de prueba.',
+    trialEnded: 'Tu prueba gratis terminó. Elige un plan para seguir usando anareQ.',
+    paywallTitle: 'Sigue auditando campañas con anareQ',
+    paywallDesc: 'Tu prueba gratis incluye 3 auditorías en hasta 3 días. Para seguir generando diagnósticos, elige un plan o usa un código de acceso.',
+    monthlyTitle: 'Plan mensual',
+    yearlyTitle: 'Plan anual',
+    monthlyDesc: 'Ideal para validar y usar con tus primeros clientes.',
+    yearlyDesc: 'Mejor valor para gestores y agencias que auditan todos los meses.',
+    subscribeMonthly: 'Suscribirme mensual',
+    subscribeYearly: 'Suscribirme anual',
+    codeTitle: 'Tengo un código de acceso',
+    codePlaceholder: 'Escribe tu código',
+    redeem: 'Activar código',
+    portal: 'Gestionar suscripción',
+    refresh: 'Actualizar acceso',
+    checkoutError: 'No fue posible abrir el pago. Revisa la configuración de Stripe.',
+    codeSuccess: 'Código activado correctamente.',
+    codeError: 'Código inválido, vencido o ya utilizado.',
+    loading: 'Verificando acceso...',
+    launch: 'Precio de lanzamiento'
+  };
+};
+
 function AnareQApp({ initialAuthMode = 'signin', routePath = '/app', navigate } = {}) {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -139,6 +229,13 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const [showMeasurementModule, setShowMeasurementModule] = useState(false);
   const [measurementAnswers, setMeasurementAnswers] = useState({ ...EMPTY_MEASUREMENT_ANSWERS });
   const [copiedText, setCopiedText] = useState(false);
+  const [accessState, setAccessState] = useState(null);
+  const [accessLoading, setAccessLoading] = useState(true);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [billingAction, setBillingAction] = useState('');
+  const [accessCodeValue, setAccessCodeValue] = useState('');
+  const [accessNotice, setAccessNotice] = useState('');
+  const [accessError, setAccessError] = useState('');
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -168,7 +265,6 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
     phone: accountProfile.phone || '',
     businessName: accountProfile.businessName || '',
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(profileDisplayName)}&background=ea580c&color=fff&size=128`,
-    plan: '',
   };
 
   // --- SESIÓN REAL CON FIREBASE AUTH ---
@@ -201,6 +297,37 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
     });
     return unsubscribe;
   }, []);
+
+
+  // --- ACCESO COMERCIAL: trial interno, Stripe y códigos promocionales ---
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setAccessState(null);
+      setAccessLoading(false);
+      setShowPaywall(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const loadAccess = async () => {
+      setAccessLoading(true);
+      try {
+        const state = await ensureUserAccess(currentUser.uid, currentUser.email || '');
+        if (!isCancelled) {
+          setAccessState(state);
+          setShowPaywall(!getAccessInfo(state).canUse);
+        }
+      } catch (error) {
+        console.warn('Could not load access state:', error);
+        if (!isCancelled) setShowPaywall(true);
+      } finally {
+        if (!isCancelled) setAccessLoading(false);
+      }
+    };
+
+    loadAccess();
+    return () => { isCancelled = true; };
+  }, [currentUser?.uid, currentUser?.email]);
 
   // --- HISTORIAL EN LA NUBE: disponible al iniciar sesión desde PC, PWA o móvil ---
   useEffect(() => {
@@ -407,6 +534,7 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
   const money = (value, digits = 0) => formatCurrency(value, currencyCode, languageCode, digits);
   const localizeCurrencyText = (value) => replaceCurrencySymbol(value, currencyCode);
   const locale = LANGUAGE_LOCALES[languageCode] || LANGUAGE_LOCALES.es;
+  const accountStatusLabel = languageCode === 'en' ? 'Account status' : languageCode === 'pt' ? 'Estado da conta' : 'Estado de cuenta';
   const signupPlaceholders = languageCode === 'en'
     ? { name: 'Full name', businessName: 'Business or project', phone: 'Phone or WhatsApp' }
     : languageCode === 'pt'
@@ -418,6 +546,14 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
     : languageCode === 'pt'
       ? 'Voltar ao início'
       : 'Volver al inicio';
+
+  const accessCopy = getAccessCopy(languageCode);
+  const accessInfo = getAccessInfo(accessState || {});
+  const isAccessBlocked = Boolean(currentUser && !accessLoading && !accessInfo.canUse);
+  const accessBadgeLabel = accessInfo.isPaid ? accessCopy.activeBadge : accessInfo.isPromo ? accessCopy.promoBadge : accessInfo.isTrial ? accessCopy.trialBadge : accessCopy.expiredBadge;
+  const trialInfoLabel = accessCopy.trialInfo
+    .replace('{audits}', String(accessInfo.trialAuditsRemaining || 0))
+    .replace('{days}', String(accessInfo.trialDaysRemaining || 0));
 
   const handleBackToLanding = () => {
     setAuthError('');
@@ -659,6 +795,91 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
       await deferredInstallPrompt.userChoice;
     } finally {
       setDeferredInstallPrompt(null);
+    }
+  };
+
+  const refreshAccessState = async () => {
+    if (!currentUser?.uid) return null;
+    setAccessLoading(true);
+    try {
+      const state = await ensureUserAccess(currentUser.uid, currentUser.email || '');
+      setAccessState(state);
+      setShowPaywall(!getAccessInfo(state).canUse);
+      return state;
+    } catch (error) {
+      console.warn('Could not refresh access state:', error);
+      setShowPaywall(true);
+      return null;
+    } finally {
+      setAccessLoading(false);
+    }
+  };
+
+  const handleStartCheckout = async (plan) => {
+    if (!currentUser?.uid || billingAction) return;
+    setAccessError('');
+    setAccessNotice('');
+    setBillingAction(plan);
+    try {
+      const token = await getCurrentUserIdToken(true);
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ plan })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) throw new Error(data.error || 'checkout_failed');
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      setAccessError(accessCopy.checkoutError);
+      setBillingAction('');
+    }
+  };
+
+  const handleOpenBillingPortal = async () => {
+    if (!currentUser?.uid || billingAction) return;
+    setBillingAction('portal');
+    setAccessError('');
+    try {
+      const token = await getCurrentUserIdToken(true);
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) throw new Error(data.error || 'portal_failed');
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Portal failed:', error);
+      setAccessError(accessCopy.checkoutError);
+      setBillingAction('');
+    }
+  };
+
+  const handleRedeemAccessCode = async () => {
+    if (!currentUser?.uid || billingAction || !accessCodeValue.trim()) return;
+    setBillingAction('code');
+    setAccessError('');
+    setAccessNotice('');
+    try {
+      const token = await getCurrentUserIdToken(true);
+      const response = await fetch('/api/redeem-access-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: accessCodeValue })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.accessState) throw new Error(data.error || 'redeem_failed');
+      setAccessState(data.accessState);
+      setAccessCodeValue('');
+      setAccessNotice(accessCopy.codeSuccess);
+      setShowPaywall(false);
+    } catch (error) {
+      console.error('Redeem access code failed:', error);
+      setAccessError(accessCopy.codeError);
+    } finally {
+      setBillingAction('');
     }
   };
 
@@ -931,11 +1152,24 @@ const handleAdChange = (setId, adId, field, value) => {
 
   const currentMediaEfficiency = calculateMediaEfficiency(adSets);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (isAnalyzing) return;
     
     if (totalSpend <= 0) { setFormError(t('formSpendError').replace('{currency}', currencySymbol)); return; }
     if (totalLeads <= 0) { setFormError(t('formLeadError')); return; }
+    if (accessLoading) { setFormError(accessCopy.loading); return; }
+
+    try {
+      const nextAccessState = await consumeTrialAudit(currentUser.uid, currentUser.email || '');
+      setAccessState(nextAccessState);
+      if (!getAccessInfo(nextAccessState).canUse && getAccessInfo(nextAccessState).reason) setShowPaywall(true);
+    } catch (error) {
+      console.warn('Trial limit reached:', error);
+      if (error?.state) setAccessState(error.state);
+      setShowPaywall(true);
+      setFormError(accessCopy.trialEnded);
+      return;
+    }
 
     setIsAnalyzing(true);
     setResults(null);
@@ -1868,6 +2102,66 @@ const restoreActiveAuditAfterHistoryRead = () => {
     setExpandedGlossaryTerms(prev => ({ ...prev, [termId]: !prev[termId] }));
   };
 
+
+  const paywallModal = (isAccessBlocked || showPaywall) && currentUser ? (
+    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-stone-950/75 p-3 sm:p-4 backdrop-blur-sm no-print">
+      <div className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-2xl">
+        <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
+          <section className="bg-stone-950 p-6 text-white sm:p-8">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-400">anareQ</p>
+            <h2 className="mt-3 text-2xl font-black leading-tight sm:text-3xl">{accessCopy.paywallTitle}</h2>
+            <p className="mt-4 text-sm font-semibold leading-6 text-stone-300">{accessCopy.paywallDesc}</p>
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-300">{accessBadgeLabel}</p>
+              <p className="mt-2 text-sm font-bold leading-6 text-white">{trialInfoLabel}</p>
+            </div>
+            {accessInfo.isPaid && (
+              <button type="button" onClick={handleOpenBillingPortal} disabled={Boolean(billingAction)} className="mt-5 w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-black text-white transition hover:bg-white/15 disabled:cursor-wait disabled:opacity-60">
+                {accessCopy.portal}
+              </button>
+            )}
+          </section>
+
+          <section className="p-5 sm:p-7">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <button type="button" onClick={() => handleStartCheckout('monthly')} disabled={Boolean(billingAction)} className="rounded-3xl border border-orange-200 bg-orange-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg disabled:cursor-wait disabled:opacity-60">
+                <span className="inline-flex rounded-full bg-orange-600 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white">{accessCopy.launch}</span>
+                <h3 className="mt-4 text-lg font-black text-stone-900">{accessCopy.monthlyTitle}</h3>
+                <p className="mt-2 text-sm font-bold leading-6 text-stone-500">{accessCopy.monthlyDesc}</p>
+                <p className="mt-5 text-3xl font-black text-stone-950">{BILLING_PRICE_LABELS.monthly}</p>
+                <span className="mt-4 inline-flex rounded-xl bg-stone-950 px-4 py-3 text-sm font-black text-white">{billingAction === 'monthly' ? '...' : accessCopy.subscribeMonthly}</span>
+              </button>
+
+              <button type="button" onClick={() => handleStartCheckout('yearly')} disabled={Boolean(billingAction)} className="rounded-3xl border border-stone-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg disabled:cursor-wait disabled:opacity-60">
+                <span className="inline-flex rounded-full bg-stone-900 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white">Melhor valor</span>
+                <h3 className="mt-4 text-lg font-black text-stone-900">{accessCopy.yearlyTitle}</h3>
+                <p className="mt-2 text-sm font-bold leading-6 text-stone-500">{accessCopy.yearlyDesc}</p>
+                <p className="mt-5 text-3xl font-black text-stone-950">{BILLING_PRICE_LABELS.yearly}</p>
+                <span className="mt-4 inline-flex rounded-xl bg-orange-600 px-4 py-3 text-sm font-black text-white">{billingAction === 'yearly' ? '...' : accessCopy.subscribeYearly}</span>
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-stone-500">{accessCopy.codeTitle}</p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <input value={accessCodeValue} onChange={(event) => setAccessCodeValue(event.target.value)} placeholder={accessCopy.codePlaceholder} className="min-w-0 flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm font-black uppercase tracking-wide text-stone-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+                <button type="button" onClick={handleRedeemAccessCode} disabled={billingAction === 'code'} className="rounded-xl bg-stone-950 px-4 py-3 text-sm font-black text-white transition hover:bg-black disabled:cursor-wait disabled:opacity-60">
+                  {billingAction === 'code' ? '...' : accessCopy.redeem}
+                </button>
+              </div>
+              {accessNotice && <p className="mt-3 text-xs font-black text-green-700">{accessNotice}</p>}
+              {accessError && <p className="mt-3 text-xs font-black text-red-700">{accessError}</p>}
+            </div>
+
+            <button type="button" onClick={refreshAccessState} className="mt-4 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-stone-500 transition hover:bg-stone-50">
+              {accessCopy.refresh}
+            </button>
+          </section>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   if (authLoading) {
     return (
       <div className={`min-h-screen flex items-center justify-center p-6 ${isDarkMode ? 'anareq-dark bg-stone-950 text-stone-100' : 'bg-[#f4f2f0] text-stone-900'}`}>
@@ -2051,6 +2345,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
       <Toast visible={toastConfig.visible} message={toastConfig} onClose={handleCloseToast} />
       <SupportWidget languageCode={languageCode} />
       {legalDocumentModal}
+      {paywallModal}
       {auditPendingDelete && (
   <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 px-4">
     <div
@@ -2287,6 +2582,7 @@ const restoreActiveAuditAfterHistoryRead = () => {
           })}
         </div>
 
+        <div className="mt-auto" />
       </aside>
 
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-[100vw] overflow-hidden box-border z-50 border-t backdrop-blur px-2 py-2 no-print ${isDarkMode ? 'border-stone-700 bg-stone-900/95' : 'border-stone-200 bg-white/95'}`}>

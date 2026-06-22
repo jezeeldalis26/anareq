@@ -48,27 +48,6 @@ const LANGUAGES = [
   { code: 'en', label: 'EN', name: 'English' },
 ];
 
-const LAUNCH_OFFER_ENDS_AT = '2026-07-15T23:59:59-03:00';
-
-const getLaunchCountdown = () => {
-  const end = new Date(LAUNCH_OFFER_ENDS_AT).getTime();
-  const now = Date.now();
-  const diff = Math.max(0, end - now);
-
-  const days = Math.floor(diff / 86400000);
-  const hours = Math.floor((diff % 86400000) / 3600000);
-  const minutes = Math.floor((diff % 3600000) / 60000);
-  const seconds = Math.floor((diff % 60000) / 1000);
-
-  return {
-    isExpired: diff <= 0,
-    days,
-    hours,
-    minutes,
-    seconds,
-  };
-};
-
 const normalizeLandingLanguageCode = (value) => {
   const lang = String(value || '').trim().toLowerCase();
   if (!lang) return '';
@@ -203,8 +182,8 @@ const LANDING_COPY = {
       ],
     },
     pricing: {
-      eyebrow: 'Precio de lanzamiento',
-      title: 'Empieza con una oferta especial para Brasil.',
+      eyebrow: 'Precio simple',
+      title: 'Un solo plan para empezar simple.',
       monthly: 'Mensual',
       yearly: 'Anual',
       perMonth: 'por mes',
@@ -215,14 +194,13 @@ const LANDING_COPY = {
       monthlyPrice: 'R$99',
       oldYearlyPrice: 'R$1.599',
       yearlyPrice: 'R$899',
-      yearlySavings: 'Ahorra R$700',
-      countdownLabel: 'La oferta de lanzamiento termina en',
-      countdownExpired: 'La oferta de lanzamiento finalizó.',
-      countdownUnits: { days: 'días', hours: 'horas', minutes: 'min', seconds: 'seg' },
-      benefitsMonthly: ['3 auditorías gratis en hasta 3 días', 'Score anareQ', 'Exportación PDF', 'Historial y resumen copiable'],
-      benefitsYearly: ['Todo lo del plan mensual', 'Ahorro de R$700 frente al precio regular', 'Soporte prioritario durante la fase inicial'],
+      annualSaving: 'Ahorra R$700',
+      countdownLabel: 'Oferta de lanzamiento termina en',
+      countdownExpired: 'Oferta de lanzamiento finalizada',
+      benefitsMonthly: ['Auditorías de campañas', 'Score anareQ', 'Exportación PDF', 'Historial y resumen copiable'],
+      benefitsYearly: ['Todo lo del plan mensual', 'Ahorro frente al pago mes a mes', 'Soporte prioritario durante la fase inicial'],
       cta: 'Comenzar ahora',
-      note: 'Sin permanencia. Cancela renovaciones futuras cuando lo necesites.',
+      note: 'Prueba gratis: 3 auditorías en hasta 3 días. Sin permanencia. Cancela renovaciones futuras cuando lo necesites.',
     },
     faq: {
       eyebrow: 'Preguntas frecuentes',
@@ -244,7 +222,7 @@ const LANDING_COPY = {
       button: 'Crear cuenta gratis',
     },
     footer: {
-      product: 'SaaS para auditoría de rentabilidad',
+      product: 'Producto en fase inicial',
       contact: 'Contacto',
       linkedin: 'LinkedIn',
       instagram: 'Instagram',
@@ -360,8 +338,8 @@ const LANDING_COPY = {
       ],
     },
     pricing: {
-      eyebrow: 'Preço de lançamento',
-      title: 'Comece com uma oferta especial para o Brasil.',
+      eyebrow: 'Preço simples',
+      title: 'Um único plano para começar simples.',
       monthly: 'Mensal',
       yearly: 'Anual',
       perMonth: 'por mês',
@@ -372,14 +350,13 @@ const LANDING_COPY = {
       monthlyPrice: 'R$99',
       oldYearlyPrice: 'R$1.599',
       yearlyPrice: 'R$899',
-      yearlySavings: 'Economize R$700',
-      countdownLabel: 'A oferta de lançamento termina em',
-      countdownExpired: 'A oferta de lançamento terminou.',
-      countdownUnits: { days: 'dias', hours: 'horas', minutes: 'min', seconds: 'seg' },
-      benefitsMonthly: ['3 auditorias grátis em até 3 dias', 'Score anareQ', 'Exportação PDF', 'Histórico e resumo copiável'],
-      benefitsYearly: ['Tudo do plano mensal', 'Economia de R$700 frente ao preço regular', 'Suporte prioritário durante a fase inicial'],
+      annualSaving: 'Economize R$700',
+      countdownLabel: 'Oferta de lançamento termina em',
+      countdownExpired: 'Oferta de lançamento encerrada',
+      benefitsMonthly: ['Auditorias de campanhas', 'Score anareQ', 'Exportação PDF', 'Histórico e resumo copiável'],
+      benefitsYearly: ['Tudo do plano mensal', 'Economia frente ao pagamento mês a mês', 'Suporte prioritário durante a fase inicial'],
       cta: 'Começar agora',
-      note: 'Sem permanência. Cancele renovações futuras quando precisar.',
+      note: 'Teste grátis: 3 auditorias em até 3 dias. Sem permanência. Cancele renovações futuras quando precisar.',
     },
     faq: {
       eyebrow: 'Perguntas frequentes',
@@ -401,7 +378,7 @@ const LANDING_COPY = {
       button: 'Criar conta grátis',
     },
     footer: {
-      product: 'SaaS para auditoria de rentabilidade',
+      product: 'Produto em fase inicial',
       contact: 'Contato',
       linkedin: 'LinkedIn',
       instagram: 'Instagram',
@@ -517,8 +494,8 @@ const LANDING_COPY = {
       ],
     },
     pricing: {
-      eyebrow: 'Launch price',
-      title: 'Start with a special offer for Brazil.',
+      eyebrow: 'Simple pricing',
+      title: 'One plan to keep the beginning simple.',
       monthly: 'Monthly',
       yearly: 'Yearly',
       perMonth: 'per month',
@@ -527,16 +504,15 @@ const LANDING_COPY = {
       launchBadge: 'Launch price',
       oldMonthlyPrice: 'R$179',
       monthlyPrice: 'R$99',
-      oldYearlyPrice: 'R$1,599',
+      oldYearlyPrice: 'R$1.599',
       yearlyPrice: 'R$899',
-      yearlySavings: 'Save R$700',
+      annualSaving: 'Save R$700',
       countdownLabel: 'Launch offer ends in',
-      countdownExpired: 'The launch offer has ended.',
-      countdownUnits: { days: 'days', hours: 'hours', minutes: 'min', seconds: 'sec' },
-      benefitsMonthly: ['3 free audits within up to 3 days', 'anareQ Score', 'PDF export', 'History and copyable summary'],
-      benefitsYearly: ['Everything in monthly', 'Save R$700 vs. the regular price', 'Priority support during the initial phase'],
+      countdownExpired: 'Launch offer ended',
+      benefitsMonthly: ['Campaign audits', 'anareQ Score', 'PDF export', 'History and copyable summary'],
+      benefitsYearly: ['Everything in monthly', 'Savings vs. monthly payment', 'Priority support during the initial phase'],
       cta: 'Start now',
-      note: 'No long-term lock-in. Cancel future renewals when needed.',
+      note: 'Free trial: 3 audits within up to 3 days. No long-term lock-in. Cancel future renewals when needed.',
     },
     faq: {
       eyebrow: 'FAQ',
@@ -572,6 +548,30 @@ const LANDING_COPY = {
       pdf: 'Professional anareQ PDF report',
     },
   },
+};
+
+
+const LAUNCH_OFFER_ENDS_AT = '2026-07-15T23:59:59-03:00';
+
+const getLaunchOfferCountdown = () => {
+  const distance = new Date(LAUNCH_OFFER_ENDS_AT).getTime() - Date.now();
+  if (!Number.isFinite(distance) || distance <= 0) {
+    return { expired: true, days: '00', hours: '00', minutes: '00', seconds: '00' };
+  }
+
+  const days = Math.floor(distance / 86400000);
+  const hours = Math.floor((distance % 86400000) / 3600000);
+  const minutes = Math.floor((distance % 3600000) / 60000);
+  const seconds = Math.floor((distance % 60000) / 1000);
+  const pad = (value) => String(value).padStart(2, '0');
+
+  return {
+    expired: false,
+    days: pad(days),
+    hours: pad(hours),
+    minutes: pad(minutes),
+    seconds: pad(seconds),
+  };
 };
 
 function LoadingScreen() {
@@ -643,20 +643,18 @@ function LandingImage({ srcs, alt, className = '', imgClassName = '', loading = 
 
 function LandingPage({ navigate }) {
   const [landingLanguage, setLandingLanguage] = useState(() => detectPreferredLandingLanguage());
-  const [offerCountdown, setOfferCountdown] = useState(() => getLaunchCountdown());
 
   const copy = LANDING_COPY[landingLanguage] || LANDING_COPY.es;
+  const [offerCountdown, setOfferCountdown] = useState(() => getLaunchOfferCountdown());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setOfferCountdown(getLaunchOfferCountdown()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = landingLanguage;
   }, [landingLanguage]);
-
-  useEffect(() => {
-    const updateCountdown = () => setOfferCountdown(getLaunchCountdown());
-    updateCountdown();
-    const timer = window.setInterval(updateCountdown, 1000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const handleNavigate = (event, path) => {
     event.preventDefault();
@@ -874,36 +872,31 @@ function LandingPage({ navigate }) {
         <div className="relative mx-auto max-w-5xl">
           <SectionHeader eyebrow={copy.pricing.eyebrow} title={copy.pricing.title} centered light />
 
-          <div className="mx-auto mt-8 max-w-3xl rounded-[2rem] border border-orange-500/25 bg-orange-500/10 p-4 text-center shadow-2xl shadow-orange-950/20">
-            {!offerCountdown.isExpired ? (
-              <>
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">{copy.pricing.countdownLabel}</p>
-                <div className="mt-3 grid grid-cols-4 gap-2">
-                  {[
-                    [offerCountdown.days, copy.pricing.countdownUnits.days],
-                    [offerCountdown.hours, copy.pricing.countdownUnits.hours],
-                    [offerCountdown.minutes, copy.pricing.countdownUnits.minutes],
-                    [offerCountdown.seconds, copy.pricing.countdownUnits.seconds],
-                  ].map(([value, label]) => (
-                    <div key={label} className="rounded-2xl border border-white/10 bg-black/35 px-3 py-3">
-                      <span className="block text-2xl font-black text-white">{String(value).padStart(2, '0')}</span>
-                      <span className="mt-1 block text-[10px] font-black uppercase tracking-wider text-stone-400">{label}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-sm font-extrabold text-orange-200">{copy.pricing.countdownExpired}</p>
+          <div className="mx-auto mt-8 flex max-w-3xl flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-orange-500/30 bg-orange-500/10 px-5 py-4 text-center shadow-2xl shadow-orange-950/20 sm:flex-row sm:justify-between sm:text-left">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-orange-300">{copy.pricing.launchBadge}</p>
+              <p className="mt-1 text-sm font-bold text-stone-300">
+                {offerCountdown.expired ? copy.pricing.countdownExpired : copy.pricing.countdownLabel}
+              </p>
+            </div>
+            {!offerCountdown.expired && (
+              <div className="flex items-center gap-2 font-mono text-sm font-black text-white" aria-label={copy.pricing.countdownLabel}>
+                {[offerCountdown.days, offerCountdown.hours, offerCountdown.minutes, offerCountdown.seconds].map((part, index) => (
+                  <span key={`${part}-${index}`} className="rounded-xl border border-white/10 bg-black/35 px-3 py-2">{part}</span>
+                ))}
+              </div>
             )}
           </div>
 
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <article className="rounded-[2rem] border border-white/15 bg-white/[0.04] p-7 transition duration-300 hover:-translate-y-1 hover:border-orange-500/30">
-              <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-orange-300">{copy.pricing.launchBadge}</span>
-              <h3 className="mt-5 text-xl font-extrabold text-white">{copy.pricing.monthly}</h3>
-              <div className="mt-5 space-y-1">
-                <p className="text-sm font-bold text-stone-500 line-through">{copy.pricing.oldMonthlyPrice}</p>
-                <div className="flex flex-wrap items-end gap-2">
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-xl font-extrabold text-white">{copy.pricing.monthly}</h3>
+                <span className="rounded-full bg-orange-600/15 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-orange-300">{copy.pricing.launchBadge}</span>
+              </div>
+              <div className="mt-5">
+                <span className="text-lg font-extrabold text-stone-500 line-through">{copy.pricing.oldMonthlyPrice}</span>
+                <div className="mt-1 flex flex-wrap items-end gap-2">
                   <span className="text-4xl font-extrabold text-white sm:text-5xl">{copy.pricing.monthlyPrice}</span>
                   <span className="pb-2 text-sm font-semibold text-stone-400">{copy.pricing.perMonth}</span>
                 </div>
@@ -919,15 +912,14 @@ function LandingPage({ navigate }) {
             </article>
             <article className="relative rounded-[2rem] border border-orange-500 bg-white/[0.06] p-7 shadow-2xl shadow-orange-950/30 transition duration-300 hover:-translate-y-1">
               <span className="absolute right-6 top-6 rounded-full bg-orange-600 px-3 py-1 text-[11px] font-extrabold text-white">{copy.pricing.badge}</span>
-              <span className="rounded-full bg-orange-500/15 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-orange-300">{copy.pricing.launchBadge}</span>
-              <h3 className="mt-5 text-xl font-extrabold text-white">{copy.pricing.yearly}</h3>
-              <div className="mt-5 space-y-1">
-                <p className="text-sm font-bold text-stone-500 line-through">{copy.pricing.oldYearlyPrice}</p>
-                <div className="flex flex-wrap items-end gap-2">
+              <h3 className="text-xl font-extrabold text-white">{copy.pricing.yearly}</h3>
+              <div className="mt-5">
+                <span className="text-lg font-extrabold text-stone-500 line-through">{copy.pricing.oldYearlyPrice}</span>
+                <div className="mt-1 flex flex-wrap items-end gap-2">
                   <span className="text-4xl font-extrabold text-white sm:text-5xl">{copy.pricing.yearlyPrice}</span>
                   <span className="pb-2 text-sm font-semibold text-stone-400">{copy.pricing.perYear}</span>
                 </div>
-                <p className="text-sm font-extrabold text-orange-300">{copy.pricing.yearlySavings}</p>
+                <p className="mt-3 inline-flex rounded-full bg-orange-500/15 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-orange-300">{copy.pricing.annualSaving}</p>
               </div>
               <div className="my-7 h-px bg-orange-500/30" />
               <ul className="space-y-3">

@@ -1,21 +1,20 @@
 {
-  "": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
       "source": "/login",
-      "destination": "/"
+      "destination": "/index.html"
     },
     {
       "source": "/registro",
-      "destination": "/"
+      "destination": "/index.html"
     },
     {
       "source": "/app",
-      "destination": "/"
+      "destination": "/index.html"
     },
     {
       "source": "/app/:path*",
-      "destination": "/"
+      "destination": "/index.html"
     }
   ]
 }

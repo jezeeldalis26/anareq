@@ -1,59 +1,104 @@
-import { adminDb, requireUser, readJsonBody } from './_firebaseAdmin.js';
-import { APP_URL, STRIPE_PRICES, stripe } from './_stripe.js';
+import Stripe from "stripe";
+
+function parseBody(req) {
+  if (!req.body) return {};
+
+  if (typeof req.body === "object") {
+    return req.body;
+  }
+
+  if (typeof req.body === "string") {
+    try {
+      return JSON.parse(req.body);
+    } catch {
+      return {};
+    }
+  }
+
+  return {};
+}
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "method_not_allowed",
+      message: "Use POST to create a Stripe Checkout session."
+    });
+  }
 
   try {
-    const user = await requireUser(req);
-    const body = await readJsonBody(req);
-    const plan = body.plan === 'yearly' ? 'yearly' : 'monthly';
-    const price = STRIPE_PRICES[plan];
-    if (!price) return res.status(400).json({ error: 'missing_price_id' });
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-    const userRef = adminDb.collection('users').doc(user.uid);
-    const snapshot = await userRef.get();
-    const userData = snapshot.exists ? snapshot.data() : {};
-    let customerId = userData?.billing?.stripeCustomerId || userData?.stripeCustomerId || '';
+    const monthlyPrice =
+      process.env.STRIPE_PRICE_MONTHLY ||
+      process.env.VITE_STRIPE_PRICE_MONTHLY;
 
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: userData?.profile?.name || user.name || '',
-        metadata: { uid: user.uid, app: 'anareQ' }
+    const yearlyPrice =
+      process.env.STRIPE_PRICE_YEARLY ||
+      process.env.VITE_STRIPE_PRICE_YEARLY;
+
+    const appUrl =
+      process.env.APP_URL ||
+      process.env.VITE_APP_URL ||
+      "https://anareq.com";
+
+    if (!stripeSecretKey) {
+      return res.status(500).json({
+        error: "missing_stripe_secret_key"
       });
-      customerId = customer.id;
-      await userRef.set({
-        billing: { stripeCustomerId: customerId },
-        stripeCustomerId: customerId,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
     }
 
+    const body = parseBody(req);
+    const plan = body.plan === "yearly" ? "yearly" : "monthly";
+    const price = plan === "yearly" ? yearlyPrice : monthlyPrice;
+
+    if (!price || !price.startsWith("price_")) {
+      return res.status(500).json({
+        error: "missing_or_invalid_price_id",
+        plan,
+        hint: "Use Stripe Price IDs that start with price_, not Product IDs that start with prod_."
+      });
+    }
+
+    const stripe = new Stripe(stripeSecretKey);
+
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      customer: customerId,
-      client_reference_id: user.uid,
-      line_items: [{ price, quantity: 1 }],
+      mode: "subscription",
+      line_items: [
+        {
+          price,
+          quantity: 1
+        }
+      ],
       allow_promotion_codes: true,
-      success_url: `${APP_URL}/app?billing=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/app?billing=cancelled`,
-      metadata: { uid: user.uid, plan },
-      subscription_data: { metadata: { uid: user.uid, plan } }
+      success_url: `${appUrl}/app?billing=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/app?billing=cancelled`,
+      customer_email:
+        body.email && String(body.email).includes("@") ? body.email : undefined,
+      client_reference_id: body.uid || undefined,
+      metadata: {
+        app: "anareQ",
+        plan,
+        uid: body.uid || ""
+      },
+      subscription_data: {
+        metadata: {
+          app: "anareQ",
+          plan,
+          uid: body.uid || ""
+        }
+      }
     });
 
-    await userRef.set({
-      billing: {
-        stripeCustomerId: customerId,
-        lastCheckoutSessionId: session.id,
-        lastRequestedPlan: plan
-      },
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
-
-    return res.status(200).json({ url: session.url });
+    return res.status(200).json({
+      url: session.url
+    });
   } catch (error) {
-    console.error('create-checkout-session error:', error);
-    return res.status(error.statusCode || 500).json({ error: error.message || 'checkout_failed' });
+    console.error("create-checkout-session error:", error);
+
+    return res.status(500).json({
+      error: "checkout_failed",
+      message: error.message || "Unknown Stripe checkout error"
+    });
   }
 }

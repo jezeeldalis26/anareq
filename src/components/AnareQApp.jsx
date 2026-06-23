@@ -817,22 +817,54 @@ const [isDeletingAudit, setIsDeletingAudit] = useState(false);
 
   const handleStartCheckout = async (plan) => {
     if (!currentUser?.uid || billingAction) return;
+
     setAccessError('');
     setAccessNotice('');
     setBillingAction(plan);
+
     try {
       const token = await getCurrentUserIdToken(true);
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ plan })
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          plan,
+          uid: currentUser.uid,
+          email: currentUser.email || ''
+        })
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.url) throw new Error(data.error || 'checkout_failed');
+
+      const rawText = await response.text();
+
+      let data = {};
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok || !data.url) {
+        const backendError =
+          data.message ||
+          data.error ||
+          rawText ||
+          'checkout_failed';
+
+        throw new Error(backendError);
+      }
+
       window.location.href = data.url;
     } catch (error) {
       console.error('Checkout failed:', error);
-      setAccessError(accessCopy.checkoutError);
+
+      setAccessError(
+        `${accessCopy.checkoutError} Detalle: ${error.message || 'sin detalle'}`
+      );
+
       setBillingAction('');
     }
   };
